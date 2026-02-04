@@ -33,11 +33,28 @@ CREATE TABLE IF NOT EXISTS plots (
 -- Fornitori
 CREATE TABLE IF NOT EXISTS suppliers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT,                        -- Codice auto-generato (FOR-001)
     name TEXT NOT NULL,
     contact_info TEXT,                -- Email, telefono, etc.
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Contatori per SKU auto-generati
+CREATE TABLE IF NOT EXISTS sku_counters (
+    category_prefix TEXT PRIMARY KEY,
+    last_number INTEGER DEFAULT 0
+);
+
+-- Inizializza contatori
+INSERT OR IGNORE INTO sku_counters (category_prefix, last_number) VALUES 
+    ('SEM', 0),   -- sementi
+    ('PIA', 0),   -- piantine
+    ('CON', 0),   -- concimi
+    ('FIT', 0),   -- fitofarmaci
+    ('SUB', 0),   -- substrati
+    ('FOR', 0),   -- fornitori
+    ('GEN', 0);   -- generico
 
 -- Prodotti (anagrafica)
 CREATE TABLE IF NOT EXISTS products (
