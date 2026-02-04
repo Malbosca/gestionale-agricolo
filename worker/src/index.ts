@@ -69,16 +69,49 @@ route('GET', '/api/products/:id', async (req, env, params) => {
 
 route('POST', '/api/products', async (req, env) => {
   const body = await req.json() as any;
-  const { sku, name, category_id, stock_unit_id, usage_unit_id, conversion_factor, notes } = body;
+  const { name, category_id, stock_unit_id, usage_unit_id, conversion_factor, notes } = body;
   
-  if (!sku || !name) return error('SKU e nome sono obbligatori');
+  if (!name) return error('Nome è obbligatorio');
+  
+  // Mappa categoria -> prefisso SKU
+  const prefixMap: Record<string, string> = {
+    'sementi': 'SEM',
+    'piantine': 'PIA', 
+    'concimi': 'CON',
+    'fitofarmaci': 'FIT',
+    'substrati': 'SUB'
+  };
+  
+  // Trova il prefisso dalla categoria
+  let prefix = 'GEN';
+  if (category_id) {
+    const cat = await env.DB.prepare('SELECT name FROM product_categories WHERE id = ?').bind(category_id).first() as any;
+    if (cat && prefixMap[cat.name]) {
+      prefix = prefixMap[cat.name];
+    }
+  }
+  
+  // Genera SKU automatico: PREFISSO-ANNO-NUMERO
+  const year = new Date().getFullYear();
+  
+  // Incrementa contatore
+  await env.DB.prepare(`
+    INSERT INTO sku_counters (category_prefix, last_number) VALUES (?, 1)
+    ON CONFLICT(category_prefix) DO UPDATE SET last_number = last_number + 1
+  `).bind(prefix).run();
+  
+  const counter = await env.DB.prepare(
+    'SELECT last_number FROM sku_counters WHERE category_prefix = ?'
+  ).bind(prefix).first() as any;
+  
+  const sku = `${prefix}-${year}-${String(counter.last_number).padStart(3, '0')}`;
   
   const result = await env.DB.prepare(`
     INSERT INTO products (sku, name, category_id, stock_unit_id, usage_unit_id, conversion_factor, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(sku, name, category_id || null, stock_unit_id || null, usage_unit_id || null, conversion_factor || 1, notes || null).run();
   
-  return json({ id: result.meta.last_row_id, message: 'Prodotto creato' }, 201);
+  return json({ id: result.meta.last_row_id, sku, message: 'Prodotto creato' }, 201);
 });
 
 // ============================================
@@ -213,12 +246,24 @@ route('POST', '/api/suppliers', async (req, env) => {
   
   if (!name) return error('name è obbligatorio');
   
-  const result = await env.DB.prepare(`
-    INSERT INTO suppliers (name, contact_info, notes)
-    VALUES (?, ?, ?)
-  `).bind(name, contact_info || null, notes || null).run();
+  // Genera codice automatico: FOR-NUMERO
+  await env.DB.prepare(`
+    INSERT INTO sku_counters (category_prefix, last_number) VALUES ('FOR', 1)
+    ON CONFLICT(category_prefix) DO UPDATE SET last_number = last_number + 1
+  `).run();
   
-  return json({ id: result.meta.last_row_id, message: 'Fornitore creato' }, 201);
+  const counter = await env.DB.prepare(
+    'SELECT last_number FROM sku_counters WHERE category_prefix = ?'
+  ).bind('FOR').first() as any;
+  
+  const code = `FOR-${String(counter.last_number).padStart(3, '0')}`;
+  
+  const result = await env.DB.prepare(`
+    INSERT INTO suppliers (code, name, contact_info, notes)
+    VALUES (?, ?, ?, ?)
+  `).bind(code, name, contact_info || null, notes || null).run();
+  
+  return json({ id: result.meta.last_row_id, code, message: 'Fornitore creato' }, 201);
 });
 
 // ============================================
