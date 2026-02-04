@@ -559,7 +559,7 @@
         </div>
         <form @submit.prevent="createOperation()" class="p-4">
           <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Operazione</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Operazione *</label>
             <select x-model="newOperation.type_code" required class="w-full px-3 py-2 border rounded-lg">
               <option value="">Seleziona...</option>
               <template x-for="t in operationTypes" :key="t.id">
@@ -567,34 +567,68 @@
               </template>
             </select>
           </div>
+          
+          <!-- Se Semina: scegli alveolo o campo -->
+          <div x-show="newOperation.type_code === 'semina'" class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Semina *</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" x-model="newOperation.seed_location" value="alveolo" class="text-green-600">
+                <span>In Alveolo</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" x-model="newOperation.seed_location" value="campo" class="text-green-600">
+                <span>In Campo</span>
+              </label>
+            </div>
+          </div>
+          
           <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Data *</label>
             <input x-model="newOperation.operation_date" type="date" required class="w-full px-3 py-2 border rounded-lg">
           </div>
+          
+          <!-- Multi-select Appezzamenti -->
           <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Appezzamento</label>
-            <select x-model="newOperation.plot_id" class="w-full px-3 py-2 border rounded-lg">
-              <option value="">Seleziona...</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Appezzamenti</label>
+            <div class="border rounded-lg p-2 max-h-32 overflow-auto">
               <template x-for="p in plots" :key="p.id">
-                <option :value="p.id" x-text="p.name"></option>
+                <label class="flex items-center gap-2 py-1 cursor-pointer hover:bg-gray-50 px-2 rounded">
+                  <input type="checkbox" :value="p.id" x-model="newOperation.plot_ids" class="text-green-600 rounded">
+                  <span x-text="'N° ' + p.code + ' - ' + p.name"></span>
+                </label>
               </template>
-            </select>
+            </div>
           </div>
-          <hr class="my-4">
-          <p class="text-sm text-gray-500 mb-2">Materiale utilizzato (opzionale)</p>
-          <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lotto</label>
-            <select x-model="newOperation.batch_id" class="w-full px-3 py-2 border rounded-lg">
-              <option value="">Seleziona...</option>
-              <template x-for="b in batches" :key="b.id">
-                <option :value="b.id" x-text="b.batch_code + ' - ' + b.product_name + ' (' + b.current_qty + ' ' + (b.unit_code || '') + ')'"></option>
-              </template>
-            </select>
+          
+          <!-- Se NON è raccolta: mostra materia prima -->
+          <div x-show="newOperation.type_code !== 'raccolta'">
+            <hr class="my-4">
+            <p class="text-sm text-gray-500 mb-2">Materia prima utilizzata (opzionale)</p>
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto</label>
+              <select x-model="newOperation.product_id" class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Seleziona...</option>
+                <template x-for="p in productsWithStock" :key="p.id">
+                  <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ' disp.)'"></option>
+                </template>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
+              <input x-model="newOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
-            <input x-model="newOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
+          
+          <!-- Se è raccolta: mostra kg raccolti -->
+          <div x-show="newOperation.type_code === 'raccolta'">
+            <hr class="my-4">
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Kg Raccolti *</label>
+              <input x-model="newOperation.harvest_kg" type="number" step="0.1" min="0" placeholder="Es: 150" class="w-full px-3 py-2 border rounded-lg">
+            </div>
           </div>
+          
           <div class="mb-3">
             <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <input x-model="newOperation.notes" type="text" class="w-full px-3 py-2 border rounded-lg">
@@ -618,6 +652,7 @@
         
         // Data
         products: [],
+        productsWithStock: [],
         batches: [],
         plots: [],
         operations: [],
@@ -644,7 +679,7 @@
         newBatch: { batch_code: '', product_id: '', supplier_id: '', initial_qty: '', unit_id: '', purchase_date: '', purchase_price: '' },
         newPlot: { code: '', name: '', area_sqm: '', notes: '' },
         newSupplier: { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' },
-        newOperation: { type_code: '', operation_date: '', plot_id: '', batch_id: '', quantity: '', notes: '' },
+        newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '' },
 
         tabs: [
           { id: 'dashboard', label: 'Dashboard', icon: 'bar-chart-3' },
@@ -664,8 +699,9 @@
         async loadAll() {
           this.loading = true;
           try {
-            const [products, batches, plots, operations, suppliers, categories, units, operationTypes, dashboard] = await Promise.all([
+            const [products, productsWithStock, batches, plots, operations, suppliers, categories, units, operationTypes, dashboard] = await Promise.all([
               this.fetch('/api/products'),
+              this.fetch('/api/products-with-stock'),
               this.fetch('/api/batches?with_stock=true'),
               this.fetch('/api/plots'),
               this.fetch('/api/operations'),
@@ -676,6 +712,7 @@
               this.fetch('/api/dashboard'),
             ]);
             this.products = products;
+            this.productsWithStock = productsWithStock;
             this.batches = batches;
             this.plots = plots;
             this.operations = operations;
@@ -769,22 +806,31 @@
             const data = {
               type_code: this.newOperation.type_code,
               operation_date: this.newOperation.operation_date,
-              plot_id: this.newOperation.plot_id || null,
+              plot_ids: this.newOperation.plot_ids,
               notes: this.newOperation.notes,
+              seed_location: this.newOperation.seed_location || null,
+              harvest_kg: this.newOperation.harvest_kg ? parseFloat(this.newOperation.harvest_kg) : null,
               movements: []
             };
-            if (this.newOperation.batch_id && this.newOperation.quantity) {
-              data.movements.push({
-                batch_id: parseInt(this.newOperation.batch_id),
-                movement_type: 'input',
-                quantity: parseFloat(this.newOperation.quantity)
-              });
+            
+            // Se c'è un prodotto selezionato, trova il batch e aggiungi il movimento
+            if (this.newOperation.product_id && this.newOperation.quantity) {
+              const product = this.productsWithStock.find(p => p.id == this.newOperation.product_id);
+              if (product && product.first_batch_id) {
+                data.movements.push({
+                  batch_id: product.first_batch_id,
+                  movement_type: 'input',
+                  quantity: parseFloat(this.newOperation.quantity)
+                });
+              }
             }
+            
             await this.post('/api/operations', data);
             this.showOperationModal = false;
-            this.newOperation = { type_code: '', operation_date: '', plot_id: '', batch_id: '', quantity: '', notes: '' };
+            this.newOperation = { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '' };
             this.operations = await this.fetch('/api/operations');
             this.batches = await this.fetch('/api/batches?with_stock=true');
+            this.productsWithStock = await this.fetch('/api/products-with-stock');
             this.dashboard = await this.fetch('/api/dashboard');
           } finally {
             this.saving = false;
