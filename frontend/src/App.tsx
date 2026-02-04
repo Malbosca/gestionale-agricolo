@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Package, Leaf, MapPin, Truck, ClipboardList, BarChart3, Plus, ChevronRight, Loader2 } from 'lucide-react';
 
-// API base URL - da configurare
-const API_BASE = 'https://gestionale-agricolo-api.YOUR-SUBDOMAIN.workers.dev';
+// API base URL
+const API_BASE = 'https://gestionale-agricolo-api.aziendamalbosca.workers.dev';
 
 // Tipi
 interface Product { id: number; sku: string; name: string; category_name: string; }
