@@ -477,7 +477,7 @@ route('GET', '/api/operations/:id', async (req, env, params) => {
 
 route('POST', '/api/operations', async (req, env) => {
   const body = await req.json() as any;
-  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg } = body;
+  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg, water_liters, dosage_per_hl, dosage_unit } = body;
   
   if (!type_code || !operation_date) {
     return error('type_code e operation_date sono obbligatori');
@@ -492,9 +492,9 @@ route('POST', '/api/operations', async (req, env) => {
   
   // Inserisci operazione
   const opResult = await env.DB.prepare(`
-    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions, seed_location)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null, seed_location || null).run();
+    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions, seed_location, water_liters, dosage_per_hl, dosage_unit)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null, seed_location || null, water_liters || null, dosage_per_hl || null, dosage_unit || null).run();
   
   const operationId = opResult.meta.last_row_id;
   
@@ -517,22 +517,40 @@ route('POST', '/api/operations', async (req, env) => {
   }
   
   // Inserisci movimenti e aggiorna giacenze
+  // Per concimazione/trattamento: calcola quantità effettiva = (dosage_per_hl / 1000) * water_liters
   if (movements && Array.isArray(movements)) {
     for (const mov of movements) {
+      let actualQty = mov.quantity;
+      
+      // Se è concimazione/trattamento e abbiamo dosaggio + litri acqua, calcola quantità effettiva
+      if ((type_code === 'concimazione' || type_code === 'trattamento') && dosage_per_hl && water_liters) {
+        actualQty = (dosage_per_hl / 1000) * water_liters;
+      }
+      
       await env.DB.prepare(`
         INSERT INTO operation_movements (operation_id, batch_id, movement_type, quantity, unit_id, notes)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(operationId, mov.batch_id, mov.movement_type, mov.quantity, mov.unit_id || null, mov.notes || null).run();
+      `).bind(operationId, mov.batch_id, mov.movement_type, actualQty, mov.unit_id || null, mov.notes || null).run();
       
       // Aggiorna giacenza (decrementa per input, incrementa per output)
       const sign = mov.movement_type === 'input' ? -1 : 1;
       await env.DB.prepare(`
         UPDATE batches SET current_qty = current_qty + ? WHERE id = ?
-      `).bind(sign * mov.quantity, mov.batch_id).run();
+      `).bind(sign * actualQty, mov.batch_id).run();
     }
   }
   
-  return json({ id: operationId, message: 'Operazione registrata' }, 201);
+  // Calcola e restituisci la quantità effettiva usata per feedback
+  let actualQuantityUsed = null;
+  if ((type_code === 'concimazione' || type_code === 'trattamento') && dosage_per_hl && water_liters) {
+    actualQuantityUsed = (dosage_per_hl / 1000) * water_liters;
+  }
+  
+  return json({ 
+    id: operationId, 
+    message: 'Operazione registrata',
+    actual_quantity_used: actualQuantityUsed
+  }, 201);
 });
 
 // ============================================
