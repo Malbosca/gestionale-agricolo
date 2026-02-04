@@ -34,8 +34,15 @@ CREATE TABLE IF NOT EXISTS plots (
 CREATE TABLE IF NOT EXISTS suppliers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT,                        -- Codice auto-generato (FOR-001)
-    name TEXT NOT NULL,
-    contact_info TEXT,                -- Email, telefono, etc.
+    name TEXT NOT NULL,               -- Ragione sociale
+    vat_number TEXT,                  -- Partita IVA
+    address TEXT,                     -- Indirizzo (via, numero)
+    city TEXT,                        -- Città
+    province TEXT,                    -- Provincia (2 lettere)
+    zip_code TEXT,                    -- CAP
+    phone TEXT,                       -- Telefono
+    email TEXT,                       -- Email
+    contact_info TEXT,                -- [DEPRECATO] Vecchio campo contatti
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
