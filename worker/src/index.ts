@@ -240,11 +240,17 @@ route('GET', '/api/suppliers', async (req, env) => {
   return json(results.results);
 });
 
+route('GET', '/api/suppliers/:id', async (req, env, params) => {
+  const result = await env.DB.prepare(`SELECT * FROM suppliers WHERE id = ?`).bind(params.id).first();
+  if (!result) return error('Fornitore non trovato', 404);
+  return json(result);
+});
+
 route('POST', '/api/suppliers', async (req, env) => {
   const body = await req.json() as any;
-  const { name, contact_info, notes } = body;
+  const { name, address, city, province, zip_code, vat_number, phone, email, notes } = body;
   
-  if (!name) return error('name è obbligatorio');
+  if (!name) return error('Ragione sociale è obbligatoria');
   
   // Genera codice automatico: FOR-NUMERO
   await env.DB.prepare(`
@@ -259,11 +265,32 @@ route('POST', '/api/suppliers', async (req, env) => {
   const code = `FOR-${String(counter.last_number).padStart(3, '0')}`;
   
   const result = await env.DB.prepare(`
-    INSERT INTO suppliers (code, name, contact_info, notes)
-    VALUES (?, ?, ?, ?)
-  `).bind(code, name, contact_info || null, notes || null).run();
+    INSERT INTO suppliers (code, name, address, city, province, zip_code, vat_number, phone, email, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(code, name, address || null, city || null, province || null, zip_code || null, vat_number || null, phone || null, email || null, notes || null).run();
   
   return json({ id: result.meta.last_row_id, code, message: 'Fornitore creato' }, 201);
+});
+
+route('PUT', '/api/suppliers/:id', async (req, env, params) => {
+  const body = await req.json() as any;
+  const { name, address, city, province, zip_code, vat_number, phone, email, notes } = body;
+  
+  await env.DB.prepare(`
+    UPDATE suppliers SET 
+      name = COALESCE(?, name),
+      address = COALESCE(?, address),
+      city = COALESCE(?, city),
+      province = COALESCE(?, province),
+      zip_code = COALESCE(?, zip_code),
+      vat_number = COALESCE(?, vat_number),
+      phone = COALESCE(?, phone),
+      email = COALESCE(?, email),
+      notes = COALESCE(?, notes)
+    WHERE id = ?
+  `).bind(name, address, city, province, zip_code, vat_number, phone, email, notes, params.id).run();
+  
+  return json({ message: 'Fornitore aggiornato' });
 });
 
 // ============================================
