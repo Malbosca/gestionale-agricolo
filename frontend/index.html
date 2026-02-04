@@ -307,8 +307,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <input x-model="newProduct.notes" type="text" class="w-full px-3 py-2 border rounded-lg">
           </div>
-          <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Salva Prodotto
+          <button type="submit" :disabled="saving" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span x-show="saving" class="animate-spin">⏳</span>
+            <span x-text="saving ? 'Salvataggio...' : 'Salva Prodotto'"></span>
           </button>
         </form>
       </div>
@@ -365,8 +366,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Prezzo €</label>
             <input x-model="newBatch.purchase_price" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
           </div>
-          <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Registra Acquisto
+          <button type="submit" :disabled="saving" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span x-show="saving" class="animate-spin">⏳</span>
+            <span x-text="saving ? 'Salvataggio...' : 'Registra Acquisto'"></span>
           </button>
         </form>
       </div>
@@ -396,8 +398,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <input x-model="newPlot.notes" type="text" class="w-full px-3 py-2 border rounded-lg">
           </div>
-          <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Salva Appezzamento
+          <button type="submit" :disabled="saving" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span x-show="saving" class="animate-spin">⏳</span>
+            <span x-text="saving ? 'Salvataggio...' : 'Salva Appezzamento'"></span>
           </button>
         </form>
       </div>
@@ -468,8 +471,9 @@
             <textarea x-model="newSupplier.notes" rows="2" placeholder="Note aggiuntive..." class="w-full px-3 py-2 border rounded-lg"></textarea>
           </div>
           
-          <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Salva Fornitore
+          <button type="submit" :disabled="saving" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span x-show="saving" class="animate-spin">⏳</span>
+            <span x-text="saving ? 'Salvataggio...' : 'Salva Fornitore'"></span>
           </button>
         </form>
       </div>
@@ -524,8 +528,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <input x-model="newOperation.notes" type="text" class="w-full px-3 py-2 border rounded-lg">
           </div>
-          <button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Registra Operazione
+          <button type="submit" :disabled="saving" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span x-show="saving" class="animate-spin">⏳</span>
+            <span x-text="saving ? 'Salvataggio...' : 'Registra Operazione'"></span>
           </button>
         </form>
       </div>
@@ -557,6 +562,7 @@
         showPlotModal: false,
         showSupplierModal: false,
         showOperationModal: false,
+        saving: false,
 
         // Forms
         newProduct: { name: '', category_id: '', notes: '' },
@@ -624,54 +630,84 @@
         },
 
         async createProduct() {
-          await this.post('/api/products', this.newProduct);
-          this.showProductModal = false;
-          this.newProduct = { name: '', category_id: '', notes: '' };
-          this.products = await this.fetch('/api/products');
+          if (this.saving) return;
+          this.saving = true;
+          try {
+            await this.post('/api/products', this.newProduct);
+            this.showProductModal = false;
+            this.newProduct = { name: '', category_id: '', notes: '' };
+            this.products = await this.fetch('/api/products');
+          } finally {
+            this.saving = false;
+          }
         },
 
         async createBatch() {
-          await this.post('/api/batches', { ...this.newBatch, source_type: 'purchase' });
-          this.showBatchModal = false;
-          this.newBatch = { batch_code: '', product_id: '', supplier_id: '', initial_qty: '', unit_id: '', purchase_date: '', purchase_price: '' };
-          this.batches = await this.fetch('/api/batches?with_stock=true');
+          if (this.saving) return;
+          this.saving = true;
+          try {
+            await this.post('/api/batches', { ...this.newBatch, source_type: 'purchase' });
+            this.showBatchModal = false;
+            this.newBatch = { batch_code: '', product_id: '', supplier_id: '', initial_qty: '', unit_id: '', purchase_date: '', purchase_price: '' };
+            this.batches = await this.fetch('/api/batches?with_stock=true');
+          } finally {
+            this.saving = false;
+          }
         },
 
         async createPlot() {
-          await this.post('/api/plots', this.newPlot);
-          this.showPlotModal = false;
-          this.newPlot = { code: '', name: '', area_sqm: '', notes: '' };
-          this.plots = await this.fetch('/api/plots');
+          if (this.saving) return;
+          this.saving = true;
+          try {
+            await this.post('/api/plots', this.newPlot);
+            this.showPlotModal = false;
+            this.newPlot = { code: '', name: '', area_sqm: '', notes: '' };
+            this.plots = await this.fetch('/api/plots');
+          } finally {
+            this.saving = false;
+          }
         },
 
         async createSupplier() {
-          await this.post('/api/suppliers', this.newSupplier);
-          this.showSupplierModal = false;
-          this.newSupplier = { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' };
-          this.suppliers = await this.fetch('/api/suppliers');
+          if (this.saving) return;
+          this.saving = true;
+          try {
+            await this.post('/api/suppliers', this.newSupplier);
+            this.showSupplierModal = false;
+            this.newSupplier = { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' };
+            this.suppliers = await this.fetch('/api/suppliers');
+          } finally {
+            this.saving = false;
+          }
         },
 
         async createOperation() {
-          const data = {
-            type_code: this.newOperation.type_code,
-            operation_date: this.newOperation.operation_date,
-            plot_id: this.newOperation.plot_id || null,
-            notes: this.newOperation.notes,
-            movements: []
-          };
-          if (this.newOperation.batch_id && this.newOperation.quantity) {
-            data.movements.push({
-              batch_id: parseInt(this.newOperation.batch_id),
-              movement_type: 'input',
-              quantity: parseFloat(this.newOperation.quantity)
-            });
+          if (this.saving) return;
+          this.saving = true;
+          try {
+            const data = {
+              type_code: this.newOperation.type_code,
+              operation_date: this.newOperation.operation_date,
+              plot_id: this.newOperation.plot_id || null,
+              notes: this.newOperation.notes,
+              movements: []
+            };
+            if (this.newOperation.batch_id && this.newOperation.quantity) {
+              data.movements.push({
+                batch_id: parseInt(this.newOperation.batch_id),
+                movement_type: 'input',
+                quantity: parseFloat(this.newOperation.quantity)
+              });
+            }
+            await this.post('/api/operations', data);
+            this.showOperationModal = false;
+            this.newOperation = { type_code: '', operation_date: '', plot_id: '', batch_id: '', quantity: '', notes: '' };
+            this.operations = await this.fetch('/api/operations');
+            this.batches = await this.fetch('/api/batches?with_stock=true');
+            this.dashboard = await this.fetch('/api/dashboard');
+          } finally {
+            this.saving = false;
           }
-          await this.post('/api/operations', data);
-          this.showOperationModal = false;
-          this.newOperation = { type_code: '', operation_date: '', plot_id: '', batch_id: '', quantity: '', notes: '' };
-          this.operations = await this.fetch('/api/operations');
-          this.batches = await this.fetch('/api/batches?with_stock=true');
-          this.dashboard = await this.fetch('/api/dashboard');
         }
       }
     }
