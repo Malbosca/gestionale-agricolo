@@ -583,6 +583,19 @@
             </div>
           </div>
           
+          <!-- Se Semina in ALVEOLO: chiedi piantine prodotte -->
+          <div x-show="newOperation.type_code === 'semina' && newOperation.seed_location === 'alveolo'" class="mb-3 p-3 bg-green-50 rounded-lg">
+            <p class="text-sm font-medium text-green-800 mb-2">🌱 Piantine da ottenere</p>
+            <div class="mb-2">
+              <label class="block text-sm text-gray-700 mb-1">Nome piantina</label>
+              <input x-model="newOperation.seedling_name" type="text" placeholder="Es: Pomodoro San Marzano" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Quante piantine prevedi?</label>
+              <input x-model="newOperation.seedlings_produced" type="number" min="1" placeholder="Es: 100" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+          </div>
+          
           <div class="mb-3">
             <label class="block text-sm font-medium text-gray-700 mb-1">Data *</label>
             <input x-model="newOperation.operation_date" type="date" required class="w-full px-3 py-2 border rounded-lg">
@@ -651,19 +664,44 @@
             
             <!-- Per semina, trapianto, potatura: quantità semplice -->
             <div x-show="newOperation.type_code !== 'concimazione' && newOperation.type_code !== 'trattamento'">
-              <p class="text-sm text-gray-500 mb-2">Materia prima utilizzata (opzionale)</p>
-              <div class="mb-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto</label>
-                <select x-model="newOperation.product_id" class="w-full px-3 py-2 border rounded-lg">
-                  <option value="">Seleziona...</option>
-                  <template x-for="p in productsWithStock" :key="p.id">
-                    <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ' disp.)'"></option>
-                  </template>
-                </select>
+              
+              <!-- Per TRAPIANTO: mostra piantine disponibili -->
+              <div x-show="newOperation.type_code === 'trapianto'">
+                <p class="text-sm font-medium text-gray-700 mb-2">🌱 Piantine da trapiantare</p>
+                <div class="mb-3">
+                  <label class="block text-sm text-gray-700 mb-1">Seleziona piantine</label>
+                  <select x-model="newOperation.seedling_id" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Seleziona...</option>
+                    <template x-for="s in seedlingsAvailable" :key="s.id">
+                      <option :value="s.id" x-text="s.name + ' (' + s.available_qty + ' disp.) - ' + (s.source === 'acquisto' ? '🛒 acquistate' : '🌱 da semina')"></option>
+                    </template>
+                  </select>
+                  <p x-show="!seedlingsAvailable.length" class="text-sm text-orange-600 mt-1">
+                    ⚠️ Nessuna piantina disponibile. Inserisci prima una semina in alveolo o acquista piantine.
+                  </p>
+                </div>
+                <div class="mb-3">
+                  <label class="block text-sm text-gray-700 mb-1">Quantità da trapiantare</label>
+                  <input x-model="newOperation.transplant_qty" type="number" min="1" placeholder="Es: 50" class="w-full px-3 py-2 border rounded-lg">
+                </div>
               </div>
-              <div class="mb-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
-                <input x-model="newOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
+              
+              <!-- Per SEMINA e POTATURA: mostra prodotti con giacenza -->
+              <div x-show="newOperation.type_code !== 'trapianto'">
+                <p class="text-sm text-gray-500 mb-2">Materia prima utilizzata (opzionale)</p>
+                <div class="mb-3">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto</label>
+                  <select x-model="newOperation.product_id" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Seleziona...</option>
+                    <template x-for="p in productsWithStock" :key="p.id">
+                      <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ' disp.)'"></option>
+                    </template>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
+                  <input x-model="newOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
+                </div>
               </div>
             </div>
           </div>
@@ -708,6 +746,7 @@
         // Data
         products: [],
         productsWithStock: [],
+        seedlingsAvailable: [],
         batches: [],
         plots: [],
         operations: [],
@@ -734,7 +773,7 @@
         newBatch: { batch_code: '', product_id: '', supplier_id: '', initial_qty: '', unit_id: '', purchase_date: '', purchase_price: '' },
         newPlot: { code: '', name: '', area_sqm: '', notes: '' },
         newSupplier: { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' },
-        newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' },
+        newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '', seedling_name: '', seedlings_produced: '', seedling_id: '', transplant_qty: '' },
 
         tabs: [
           { id: 'dashboard', label: 'Dashboard', icon: 'bar-chart-3' },
@@ -754,9 +793,10 @@
         async loadAll() {
           this.loading = true;
           try {
-            const [products, productsWithStock, batches, plots, operations, suppliers, categories, units, operationTypes, dashboard] = await Promise.all([
+            const [products, productsWithStock, seedlingsAvailable, batches, plots, operations, suppliers, categories, units, operationTypes, dashboard] = await Promise.all([
               this.fetch('/api/products'),
               this.fetch('/api/products-with-stock'),
+              this.fetch('/api/seedlings-available'),
               this.fetch('/api/batches?with_stock=true'),
               this.fetch('/api/plots'),
               this.fetch('/api/operations'),
@@ -768,6 +808,7 @@
             ]);
             this.products = products;
             this.productsWithStock = productsWithStock;
+            this.seedlingsAvailable = seedlingsAvailable;
             this.batches = batches;
             this.plots = plots;
             this.operations = operations;
@@ -869,11 +910,17 @@
               water_liters: this.newOperation.water_liters ? parseFloat(this.newOperation.water_liters) : null,
               dosage_per_hl: this.newOperation.dosage_per_hl ? parseFloat(this.newOperation.dosage_per_hl) : null,
               dosage_unit: this.newOperation.dosage_unit || null,
+              // Campi per semina in alveolo
+              seedling_name: this.newOperation.seedling_name || null,
+              seedlings_produced: this.newOperation.seedlings_produced ? parseInt(this.newOperation.seedlings_produced) : null,
+              // Campi per trapianto
+              seedling_id: this.newOperation.seedling_id ? parseInt(this.newOperation.seedling_id) : null,
+              transplant_qty: this.newOperation.transplant_qty ? parseInt(this.newOperation.transplant_qty) : null,
               movements: []
             };
             
-            // Se c'è un prodotto selezionato, trova il batch e aggiungi il movimento
-            if (this.newOperation.product_id) {
+            // Se c'è un prodotto selezionato (per semina/potatura), trova il batch e aggiungi il movimento
+            if (this.newOperation.product_id && this.newOperation.type_code !== 'trapianto') {
               const product = this.productsWithStock.find(p => p.id == this.newOperation.product_id);
               if (product && product.first_batch_id) {
                 // Per concimazione/trattamento la quantità viene calcolata dal backend
@@ -894,10 +941,11 @@
             
             await this.post('/api/operations', data);
             this.showOperationModal = false;
-            this.newOperation = { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' };
+            this.newOperation = { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '', seedling_name: '', seedlings_produced: '', seedling_id: '', transplant_qty: '' };
             this.operations = await this.fetch('/api/operations');
             this.batches = await this.fetch('/api/batches?with_stock=true');
             this.productsWithStock = await this.fetch('/api/products-with-stock');
+            this.seedlingsAvailable = await this.fetch('/api/seedlings-available');
             this.dashboard = await this.fetch('/api/dashboard');
           } finally {
             this.saving = false;
