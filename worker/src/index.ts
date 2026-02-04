@@ -114,6 +114,94 @@ route('POST', '/api/products', async (req, env) => {
   return json({ id: result.meta.last_row_id, sku, message: 'Prodotto creato' }, 201);
 });
 
+// Crea prodotto + primo acquisto insieme
+route('POST', '/api/products/with-purchase', async (req, env) => {
+  const body = await req.json() as any;
+  const { 
+    name, category_id, notes,
+    supplier_id, document_type, document_number, document_date,
+    quantity, unit_id, purchase_price
+  } = body;
+  
+  if (!name) return error('Nome prodotto è obbligatorio');
+  if (!supplier_id) return error('Fornitore è obbligatorio');
+  if (!quantity) return error('Quantità è obbligatoria');
+  if (!unit_id) return error('Unità di misura è obbligatoria');
+  
+  // Mappa categoria -> prefisso SKU
+  const prefixMap: Record<string, string> = {
+    'sementi': 'SEM',
+    'piantine': 'PIA', 
+    'concimi': 'CON',
+    'fitofarmaci': 'FIT',
+    'substrati': 'SUB'
+  };
+  
+  // Trova il prefisso dalla categoria
+  let prefix = 'GEN';
+  if (category_id) {
+    const cat = await env.DB.prepare('SELECT name FROM product_categories WHERE id = ?').bind(category_id).first() as any;
+    if (cat && prefixMap[cat.name]) {
+      prefix = prefixMap[cat.name];
+    }
+  }
+  
+  // Genera SKU automatico
+  const year = new Date().getFullYear();
+  await env.DB.prepare(`
+    INSERT INTO sku_counters (category_prefix, last_number) VALUES (?, 1)
+    ON CONFLICT(category_prefix) DO UPDATE SET last_number = last_number + 1
+  `).bind(prefix).run();
+  
+  const counter = await env.DB.prepare(
+    'SELECT last_number FROM sku_counters WHERE category_prefix = ?'
+  ).bind(prefix).first() as any;
+  
+  const sku = `${prefix}-${year}-${String(counter.last_number).padStart(3, '0')}`;
+  
+  // Crea prodotto
+  const productResult = await env.DB.prepare(`
+    INSERT INTO products (sku, name, category_id, stock_unit_id, usage_unit_id, notes)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(sku, name, category_id || null, unit_id, unit_id, notes || null).run();
+  
+  const productId = productResult.meta.last_row_id;
+  
+  // Genera codice lotto automatico
+  await env.DB.prepare(`
+    INSERT INTO sku_counters (category_prefix, last_number) VALUES ('LOT', 1)
+    ON CONFLICT(category_prefix) DO UPDATE SET last_number = last_number + 1
+  `).run();
+  
+  const lotCounter = await env.DB.prepare(
+    'SELECT last_number FROM sku_counters WHERE category_prefix = ?'
+  ).bind('LOT').first() as any;
+  
+  const batchCode = `LOT-${year}-${String(lotCounter.last_number).padStart(4, '0')}`;
+  
+  // Crea lotto/acquisto
+  const batchResult = await env.DB.prepare(`
+    INSERT INTO batches (
+      batch_code, product_id, source_type, supplier_id,
+      document_type, document_number, document_date,
+      purchase_date, purchase_price, initial_qty, current_qty, unit_id
+    ) VALUES (?, ?, 'purchase', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    batchCode, productId, supplier_id,
+    document_type || null, document_number || null, document_date || null,
+    document_date || new Date().toISOString().split('T')[0],
+    purchase_price || null, quantity, quantity, unit_id
+  ).run();
+  
+  return json({ 
+    product_id: productId, 
+    sku, 
+    batch_id: batchResult.meta.last_row_id,
+    batch_code: batchCode,
+    message: 'Prodotto e acquisto registrati' 
+  }, 201);
+});
+
 // ============================================
 // BATCHES (Lotti)
 // ============================================
