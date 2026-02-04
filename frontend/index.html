@@ -668,12 +668,19 @@
             </div>
           </div>
           
-          <!-- Se è raccolta: mostra kg raccolti -->
+          <!-- Se è raccolta: mostra prodotto, appezzamento e kg raccolti -->
           <div x-show="newOperation.type_code === 'raccolta'">
             <hr class="my-4">
+            <p class="text-sm font-medium text-gray-700 mb-2">🧺 Raccolta</p>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto raccolto *</label>
+              <input x-model="newOperation.harvest_product" type="text" placeholder="Es: Fragole, Pomodori, Albicocche..." required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            
             <div class="mb-3">
               <label class="block text-sm font-medium text-gray-700 mb-1">Kg Raccolti *</label>
-              <input x-model="newOperation.harvest_kg" type="number" step="0.1" min="0" placeholder="Es: 150" class="w-full px-3 py-2 border rounded-lg">
+              <input x-model="newOperation.harvest_kg" type="number" step="0.1" min="0" placeholder="Es: 150" required class="w-full px-3 py-2 border rounded-lg">
             </div>
           </div>
           
@@ -727,7 +734,7 @@
         newBatch: { batch_code: '', product_id: '', supplier_id: '', initial_qty: '', unit_id: '', purchase_date: '', purchase_price: '' },
         newPlot: { code: '', name: '', area_sqm: '', notes: '' },
         newSupplier: { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' },
-        newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' },
+        newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' },
 
         tabs: [
           { id: 'dashboard', label: 'Dashboard', icon: 'bar-chart-3' },
@@ -858,6 +865,7 @@
               notes: this.newOperation.notes,
               seed_location: this.newOperation.seed_location || null,
               harvest_kg: this.newOperation.harvest_kg ? parseFloat(this.newOperation.harvest_kg) : null,
+              harvest_product: this.newOperation.harvest_product || null,
               water_liters: this.newOperation.water_liters ? parseFloat(this.newOperation.water_liters) : null,
               dosage_per_hl: this.newOperation.dosage_per_hl ? parseFloat(this.newOperation.dosage_per_hl) : null,
               dosage_unit: this.newOperation.dosage_unit || null,
@@ -886,7 +894,7 @@
             
             await this.post('/api/operations', data);
             this.showOperationModal = false;
-            this.newOperation = { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' };
+            this.newOperation = { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '' };
             this.operations = await this.fetch('/api/operations');
             this.batches = await this.fetch('/api/batches?with_stock=true');
             this.productsWithStock = await this.fetch('/api/products-with-stock');
