@@ -7,22 +7,38 @@ Sistema di gestione per aziende agricole con tracciabilità completa delle opera
 - **Frontend**: https://gestionale-agricolo-ui.pages.dev
 - **API**: https://gestionale-agricolo-api.aziendamalbosca.workers.dev
 
+## 📱 Installazione PWA
+
+L'app è installabile su qualsiasi dispositivo:
+- **iPhone/iPad**: Safari → Condividi → Aggiungi a Home
+- **Android**: Chrome → Menu → Installa app
+- **Desktop**: Clicca icona installazione nella barra indirizzi
+
 ## ✨ Funzionalità
 
-### 📦 Gestione Prodotti
-- Categorie: Sementi, Piantine, Concimi, Fitofarmaci, Substrati
-- SKU auto-generati (es: SEM-2026-001, CON-2026-002)
-- Tracciabilità lotti con documenti (DDT/Fattura)
+### 🖥️ Interfaccia
 
-### 👥 Fornitori
-- Codice auto-generato (FOR-001)
-- Dati completi: P.IVA, indirizzo, contatti
+**Desktop:**
+- Sidebar fissa con menu organizzato per sezioni
+- Contatori in tempo reale per ogni sezione
+- Azioni rapide sempre visibili
 
-### 🗺️ Appezzamenti
-- Numerazione personalizzata
-- Superficie e tipo terreno
+**Mobile:**
+- Bottom navigation con 6 tab
+- Header con pulsante azioni rapide (+)
+- Dropdown per creare velocemente nuovi elementi
 
-### 🌾 Operazioni Colturali
+### 📦 Gestione Magazzino
+- **Prodotti**: SKU auto-generati (SEM-2026-001)
+- **Lotti/Giacenze**: Tracciabilità con documenti (DDT/Fattura)
+- **Fornitori**: Codice auto (FOR-001), P.IVA, contatti
+
+### 🌾 Coltivazione
+- **Appezzamenti**: Numerazione personalizzata
+- **Operazioni**: Semina, Trapianto, Concimazione, Trattamento, Raccolta, Potatura
+- **Piantine**: Tracciamento da semina alveolo o acquisto
+
+### 📊 Operazioni Colturali
 
 | Operazione | Campi Specifici |
 |------------|-----------------|
@@ -48,11 +64,9 @@ Formula automatica per trattamenti:
 Quantità effettiva = (dosaggio_per_hl / 1000) × litri_acqua
 ```
 
-Esempio: 500 ml/hl × 200 lt = 100 ml
-
 ## 🛠️ Stack Tecnologico
 
-- **Frontend**: Alpine.js + Tailwind CSS
+- **Frontend**: Alpine.js + Tailwind CSS (PWA)
 - **Backend**: Cloudflare Workers
 - **Database**: Cloudflare D1 (SQLite)
 - **Hosting**: Cloudflare Pages
@@ -62,7 +76,10 @@ Esempio: 500 ml/hl × 200 lt = 100 ml
 ```
 gestionale-agricolo/
 ├── frontend/
-│   └── index.html      # SPA completa
+│   ├── index.html      # SPA completa
+│   ├── manifest.json   # PWA config
+│   ├── sw.js           # Service Worker
+│   └── icons/          # Icone PWA
 ├── worker/
 │   └── src/index.ts    # API REST
 └── docs/
