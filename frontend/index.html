@@ -2,12 +2,47 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>🌱 Gestionale Agricolo</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="Sistema di gestione per aziende agricole con tracciabilità completa">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Agricolo">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     [x-cloak] { display: none !important; }
+    /* PWA Install Banner */
+    .install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    /* iOS Safari notch support */
+    @supports (padding: max(0px)) {
+      .install-banner {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      }
+    }
   </style>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -953,6 +988,84 @@
         }
       }
     }
+  </script>
+
+  <!-- PWA Install Banner -->
+  <div id="installBanner" class="install-banner" style="display: none;">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🌱</span>
+      <div>
+        <p class="font-semibold">Installa l'App</p>
+        <p class="text-sm text-green-100">Accesso rapido dal tuo dispositivo</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="dismissInstall()" class="px-3 py-1 text-green-100 hover:text-white">
+        Dopo
+      </button>
+      <button onclick="installApp()" class="px-4 py-2 bg-white text-green-600 rounded-lg font-semibold hover:bg-green-50">
+        Installa
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Installation
+    let deferredPrompt;
+    const installBanner = document.getElementById('installBanner');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // Show install banner after 3 seconds
+      setTimeout(() => {
+        if (!localStorage.getItem('pwaInstallDismissed')) {
+          installBanner.style.display = 'flex';
+        }
+      }, 3000);
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('PWA installed');
+          }
+          deferredPrompt = null;
+          installBanner.style.display = 'none';
+        });
+      }
+    }
+
+    function dismissInstall() {
+      installBanner.style.display = 'none';
+      localStorage.setItem('pwaInstallDismissed', 'true');
+      // Reset after 7 days
+      setTimeout(() => {
+        localStorage.removeItem('pwaInstallDismissed');
+      }, 7 * 24 * 60 * 60 * 1000);
+    }
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+
+    // Handle app installed event
+    window.addEventListener('appinstalled', () => {
+      installBanner.style.display = 'none';
+      console.log('PWA was installed');
+    });
   </script>
 </body>
 </html>
