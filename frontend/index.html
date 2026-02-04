@@ -299,24 +299,48 @@
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold">Prodotti</h2>
           <button @click="showProductModal = true" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Prodotto
+            <i data-lucide="plus" class="w-4 h-4"></i> 
+            <span class="hidden sm:inline">Nuovo Prodotto</span>
+            <span class="sm:hidden">Nuovo</span>
           </button>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full">
+        
+        <!-- Mobile: Cards -->
+        <div class="lg:hidden space-y-3">
+          <template x-for="p in products" :key="p.id">
+            <div class="bg-white rounded-xl shadow-sm border p-4">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-semibold text-gray-900" x-text="p.name"></p>
+                  <p class="text-sm text-green-600 font-mono" x-text="p.sku"></p>
+                </div>
+                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full" x-text="p.category_name"></span>
+              </div>
+            </div>
+          </template>
+          <div x-show="!products.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
+            Nessun prodotto. Crea il primo!
+          </div>
+        </div>
+        
+        <!-- Desktop: Table -->
+        <div class="hidden lg:block bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="w-full" x-show="products.length">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">SKU</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Nome</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Categoria</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Nome</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Categoria</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <template x-for="p in products" :key="p.id">
                 <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-mono text-sm" x-text="p.sku"></td>
-                  <td class="px-4 py-3" x-text="p.name"></td>
-                  <td class="px-4 py-3 text-gray-500" x-text="p.category_name"></td>
+                  <td class="px-4 py-3 font-mono text-sm text-green-600" x-text="p.sku"></td>
+                  <td class="px-4 py-3 font-medium" x-text="p.name"></td>
+                  <td class="px-4 py-3">
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full" x-text="p.category_name"></span>
+                  </td>
                 </tr>
               </template>
             </tbody>
@@ -332,26 +356,60 @@
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold">Lotti in Giacenza</h2>
           <button @click="showBatchModal = true" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Acquisto
+            <i data-lucide="plus" class="w-4 h-4"></i> 
+            <span class="hidden sm:inline">Nuovo Acquisto</span>
+            <span class="sm:hidden">Nuovo</span>
           </button>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full">
+        
+        <!-- Mobile: Cards -->
+        <div class="lg:hidden space-y-3">
+          <template x-for="b in batches" :key="b.id">
+            <div class="bg-white rounded-xl shadow-sm border p-4">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <p class="font-semibold text-gray-900" x-text="b.product_name"></p>
+                  <p class="text-sm text-gray-500 font-mono" x-text="b.sku"></p>
+                </div>
+                <div class="text-right">
+                  <p class="text-lg font-bold text-green-600" x-text="b.current_qty + ' ' + (b.unit_name || '')"></p>
+                  <p class="text-xs text-gray-400">disponibili</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm text-gray-500 pt-2 border-t">
+                <span class="font-mono" x-text="b.batch_code"></span>
+                <span x-show="b.supplier_name" x-text="b.supplier_name"></span>
+              </div>
+            </div>
+          </template>
+          <div x-show="!batches.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
+            Nessun lotto in giacenza
+          </div>
+        </div>
+        
+        <!-- Desktop: Table -->
+        <div class="hidden lg:block bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="w-full" x-show="batches.length">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Lotto</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Prodotto</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">SKU</th>
-                <th class="px-4 py-3 text-right text-sm font-medium text-gray-500">Giacenza</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Lotto</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Prodotto</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fornitore</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Giacenza</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <template x-for="b in batches" :key="b.id">
                 <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-mono text-sm" x-text="b.batch_code"></td>
-                  <td class="px-4 py-3" x-text="b.product_name"></td>
-                  <td class="px-4 py-3 text-gray-500" x-text="b.sku"></td>
-                  <td class="px-4 py-3 text-right font-medium" x-text="b.current_qty + ' ' + (b.unit_code || '')"></td>
+                  <td class="px-4 py-3 font-mono text-sm text-green-600" x-text="b.batch_code"></td>
+                  <td class="px-4 py-3 font-medium" x-text="b.product_name"></td>
+                  <td class="px-4 py-3 text-gray-500 font-mono text-sm" x-text="b.sku"></td>
+                  <td class="px-4 py-3 text-gray-500" x-text="b.supplier_name || '-'"></td>
+                  <td class="px-4 py-3 text-right">
+                    <span class="font-bold text-green-600" x-text="b.current_qty"></span>
+                    <span class="text-gray-500" x-text="b.unit_name || ''"></span>
+                  </td>
                 </tr>
               </template>
             </tbody>
@@ -425,41 +483,124 @@
       <!-- Fornitori -->
       <div x-show="activeTab === 'suppliers' && !loading" x-cloak>
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Fornitori</h2>
+          <h2 class="text-xl font-semibold">🚚 Fornitori</h2>
           <button @click="showSupplierModal = true" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Fornitore
+            <i data-lucide="plus" class="w-4 h-4"></i> 
+            <span class="hidden sm:inline">Nuovo Fornitore</span>
+            <span class="sm:hidden">Nuovo</span>
           </button>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full">
+        
+        <!-- Mobile: Cards -->
+        <div class="lg:hidden space-y-3">
+          <template x-for="s in suppliers" :key="s.id">
+            <div class="bg-white rounded-xl shadow-sm border p-4">
+              <!-- Header con nome e codice -->
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-5 h-5 text-amber-600"></i>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-gray-900" x-text="s.name"></p>
+                    <p class="text-xs text-green-600 font-mono" x-text="s.code"></p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Info -->
+              <div class="space-y-2 text-sm">
+                <!-- P.IVA -->
+                <div x-show="s.vat_number" class="flex items-center gap-2 text-gray-600">
+                  <i data-lucide="file-text" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                  <span>P.IVA: <span class="font-mono" x-text="s.vat_number?.trim()"></span></span>
+                </div>
+                
+                <!-- Indirizzo -->
+                <div x-show="s.address || s.city" class="flex items-start gap-2 text-gray-600">
+                  <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5"></i>
+                  <span x-text="[s.address, s.zip_code, s.city, s.province ? '(' + s.province + ')' : ''].filter(Boolean).join(', ')"></span>
+                </div>
+                
+                <!-- Telefono -->
+                <div x-show="s.phone" class="flex items-center gap-2">
+                  <i data-lucide="phone" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                  <a :href="'tel:' + s.phone" class="text-green-600 font-medium" x-text="s.phone"></a>
+                </div>
+                
+                <!-- Email -->
+                <div x-show="s.email" class="flex items-center gap-2">
+                  <i data-lucide="mail" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                  <a :href="'mailto:' + s.email" class="text-green-600 font-medium" x-text="s.email"></a>
+                </div>
+                
+                <!-- Note -->
+                <div x-show="s.notes" class="pt-2 mt-2 border-t">
+                  <p class="text-gray-500 italic text-xs" x-text="s.notes"></p>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div x-show="!suppliers.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
+            <i data-lucide="truck" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
+            <p>Nessun fornitore registrato</p>
+            <p class="text-sm mt-1">Clicca su "Nuovo" per aggiungere il primo fornitore</p>
+          </div>
+        </div>
+        
+        <!-- Desktop: Table -->
+        <div class="hidden lg:block bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="w-full" x-show="suppliers.length">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Codice</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Ragione Sociale</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">P.IVA</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Città</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Contatti</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Codice</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Ragione Sociale</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">P.IVA</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Indirizzo</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Contatti</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <template x-for="s in suppliers" :key="s.id">
                 <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-mono text-sm text-green-600" x-text="s.code"></td>
-                  <td class="px-4 py-3 font-medium" x-text="s.name"></td>
-                  <td class="px-4 py-3 text-gray-500 font-mono text-sm" x-text="s.vat_number || '-'"></td>
-                  <td class="px-4 py-3 text-gray-500" x-text="s.city ? (s.city + (s.province ? ' (' + s.province + ')' : '')) : '-'"></td>
-                  <td class="px-4 py-3 text-gray-500 text-sm">
-                    <span x-show="s.phone" x-text="s.phone"></span>
-                    <span x-show="s.phone && s.email"> • </span>
-                    <span x-show="s.email" x-text="s.email"></span>
-                    <span x-show="!s.phone && !s.email">-</span>
+                  <td class="px-4 py-3">
+                    <span class="font-mono text-sm text-green-600 bg-green-50 px-2 py-1 rounded" x-text="s.code"></span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="font-medium text-gray-900" x-text="s.name"></p>
+                    <p x-show="s.notes" class="text-xs text-gray-400 truncate max-w-xs mt-1" x-text="s.notes"></p>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600 font-mono text-sm" x-text="s.vat_number?.trim() || '-'"></td>
+                  <td class="px-4 py-3 text-gray-600 text-sm">
+                    <template x-if="s.address || s.city">
+                      <div>
+                        <p x-show="s.address" x-text="s.address"></p>
+                        <p x-text="[s.zip_code, s.city, s.province ? '(' + s.province + ')' : ''].filter(Boolean).join(' ')"></p>
+                      </div>
+                    </template>
+                    <span x-show="!s.address && !s.city" class="text-gray-400">-</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex flex-col gap-1">
+                      <a x-show="s.phone" :href="'tel:' + s.phone" class="text-gray-600 hover:text-green-600 flex items-center gap-1.5">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span x-text="s.phone"></span>
+                      </a>
+                      <a x-show="s.email" :href="'mailto:' + s.email" class="text-gray-600 hover:text-green-600 flex items-center gap-1.5">
+                        <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                        <span x-text="s.email"></span>
+                      </a>
+                      <span x-show="!s.phone && !s.email" class="text-gray-400">-</span>
+                    </div>
                   </td>
                 </tr>
               </template>
             </tbody>
           </table>
           <div x-show="!suppliers.length" class="p-8 text-center text-gray-500">
-            Nessun fornitore. Crea il primo!
+            <i data-lucide="truck" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
+            <p>Nessun fornitore registrato</p>
+            <p class="text-sm mt-1">Clicca su "Nuovo Fornitore" per iniziare</p>
           </div>
         </div>
       </div>
