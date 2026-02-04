@@ -477,7 +477,7 @@ route('GET', '/api/operations/:id', async (req, env, params) => {
 
 route('POST', '/api/operations', async (req, env) => {
   const body = await req.json() as any;
-  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg, water_liters, dosage_per_hl, dosage_unit } = body;
+  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg, harvest_product, water_liters, dosage_per_hl, dosage_unit } = body;
   
   if (!type_code || !operation_date) {
     return error('type_code e operation_date sono obbligatori');
@@ -506,13 +506,13 @@ route('POST', '/api/operations', async (req, env) => {
     `).bind(operationId, pid).run();
   }
   
-  // Se è raccolta, registra in harvests
+  // Se è raccolta, registra in harvests con prodotto e per ogni appezzamento
   if (type_code === 'raccolta' && harvest_kg) {
     for (const pid of plotsToInsert) {
       await env.DB.prepare(`
-        INSERT INTO harvests (operation_id, plot_id, quantity_kg, harvest_date)
-        VALUES (?, ?, ?, ?)
-      `).bind(operationId, pid, harvest_kg, operation_date).run();
+        INSERT INTO harvests (operation_id, plot_id, product_name, quantity_kg, harvest_date)
+        VALUES (?, ?, ?, ?, ?)
+      `).bind(operationId, pid, harvest_product || null, harvest_kg, operation_date).run();
     }
   }
   
