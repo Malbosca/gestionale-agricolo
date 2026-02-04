@@ -67,6 +67,26 @@ route('GET', '/api/products/:id', async (req, env, params) => {
   return json(result);
 });
 
+// Prodotti con giacenza disponibile (per selezione in operazioni)
+route('GET', '/api/products-with-stock', async (req, env) => {
+  const results = await env.DB.prepare(`
+    SELECT 
+      p.id, p.sku, p.name, p.category_id,
+      pc.name as category_name,
+      COALESCE(SUM(b.current_qty), 0) as total_stock,
+      u.name as unit_name,
+      (SELECT id FROM batches WHERE product_id = p.id AND current_qty > 0 ORDER BY created_at LIMIT 1) as first_batch_id
+    FROM products p
+    LEFT JOIN product_categories pc ON pc.id = p.category_id
+    LEFT JOIN batches b ON b.product_id = p.id AND b.current_qty > 0
+    LEFT JOIN units u ON u.id = b.unit_id
+    GROUP BY p.id
+    HAVING total_stock > 0
+    ORDER BY pc.name, p.name
+  `).all();
+  return json(results.results);
+});
+
 route('POST', '/api/products', async (req, env) => {
   const body = await req.json() as any;
   const { name, category_id, stock_unit_id, usage_unit_id, conversion_factor, notes } = body;
@@ -457,7 +477,7 @@ route('GET', '/api/operations/:id', async (req, env, params) => {
 
 route('POST', '/api/operations', async (req, env) => {
   const body = await req.json() as any;
-  const { type_code, operation_date, plot_id, notes, weather_conditions, movements } = body;
+  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg } = body;
   
   if (!type_code || !operation_date) {
     return error('type_code e operation_date sono obbligatori');
@@ -472,11 +492,29 @@ route('POST', '/api/operations', async (req, env) => {
   
   // Inserisci operazione
   const opResult = await env.DB.prepare(`
-    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null).run();
+    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions, seed_location)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null, seed_location || null).run();
   
   const operationId = opResult.meta.last_row_id;
+  
+  // Gestisci multi-appezzamenti
+  const plotsToInsert = plot_ids && plot_ids.length > 0 ? plot_ids : (plot_id ? [plot_id] : []);
+  for (const pid of plotsToInsert) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO operation_plots (operation_id, plot_id) VALUES (?, ?)
+    `).bind(operationId, pid).run();
+  }
+  
+  // Se è raccolta, registra in harvests
+  if (type_code === 'raccolta' && harvest_kg) {
+    for (const pid of plotsToInsert) {
+      await env.DB.prepare(`
+        INSERT INTO harvests (operation_id, plot_id, quantity_kg, harvest_date)
+        VALUES (?, ?, ?, ?)
+      `).bind(operationId, pid, harvest_kg, operation_date).run();
+    }
+  }
   
   // Inserisci movimenti e aggiorna giacenze
   if (movements && Array.isArray(movements)) {
