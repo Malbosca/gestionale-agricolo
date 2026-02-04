@@ -42,41 +42,193 @@
       .install-banner {
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
       }
+      .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+    /* Bottom nav spacing */
+    @media (max-width: 1023px) {
+      body {
+        padding-bottom: 4rem;
+      }
     }
   </style>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
-  <div x-data="app()" x-init="init()">
-    <!-- Header -->
-    <header class="bg-green-600 text-white shadow-lg">
-      <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center gap-3">
-          <i data-lucide="leaf" class="w-8 h-8"></i>
-          <div>
-            <h1 class="text-xl font-bold">Gestionale Agricolo</h1>
-            <p class="text-green-100 text-sm">Tracciabilità e Lavorazioni</p>
-          </div>
+  <div x-data="app()" x-init="init()" class="flex min-h-screen">
+    
+    <!-- Sidebar Desktop -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r shadow-sm z-40">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 px-6 py-5 border-b bg-green-600 text-white">
+        <i data-lucide="leaf" class="w-8 h-8"></i>
+        <div>
+          <h1 class="font-bold text-lg">Gestionale Agricolo</h1>
+          <p class="text-green-100 text-xs">Tracciabilità</p>
         </div>
+      </div>
+      
+      <!-- Menu Items -->
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Panoramica</p>
+        <button @click="activeTab = 'dashboard'" 
+          :class="activeTab === 'dashboard' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          <span>Dashboard</span>
+        </button>
+        
+        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Magazzino</p>
+        <button @click="activeTab = 'products'" 
+          :class="activeTab === 'products' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="package" class="w-5 h-5"></i>
+          <span>Prodotti</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="products.length"></span>
+        </button>
+        <button @click="activeTab = 'batches'" 
+          :class="activeTab === 'batches' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+          <span>Lotti / Giacenze</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="batches.length"></span>
+        </button>
+        <button @click="activeTab = 'suppliers'" 
+          :class="activeTab === 'suppliers' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="truck" class="w-5 h-5"></i>
+          <span>Fornitori</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="suppliers.length"></span>
+        </button>
+        
+        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Coltivazione</p>
+        <button @click="activeTab = 'plots'" 
+          :class="activeTab === 'plots' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+          <span>Appezzamenti</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="plots.length"></span>
+        </button>
+        <button @click="activeTab = 'operations'" 
+          :class="activeTab === 'operations' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          <span>Operazioni</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="operations.length"></span>
+        </button>
+        <button @click="activeTab = 'seedlings'" 
+          :class="activeTab === 'seedlings' ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors border border-transparent">
+          <i data-lucide="sprout" class="w-5 h-5"></i>
+          <span>Piantine</span>
+          <span class="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="seedlingsAvailable.length"></span>
+        </button>
+      </nav>
+      
+      <!-- Quick Actions -->
+      <div class="p-4 border-t bg-gray-50">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Azioni Rapide</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button @click="showOperationModal = true" class="flex flex-col items-center gap-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Operazione</span>
+          </button>
+          <button @click="showProductModal = true" class="flex flex-col items-center gap-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <i data-lucide="package-plus" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Prodotto</span>
+          </button>
+          <button @click="showSupplierModal = true" class="flex flex-col items-center gap-1 p-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+            <i data-lucide="truck" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Fornitore</span>
+          </button>
+          <button @click="showPlotModal = true" class="flex flex-col items-center gap-1 p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            <i data-lucide="map-pin" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Appezzam.</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="lg:hidden fixed top-0 left-0 right-0 bg-green-600 text-white shadow-lg z-40">
+      <div class="flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="leaf" class="w-6 h-6"></i>
+          <h1 class="font-bold">Gestionale Agricolo</h1>
+        </div>
+        <button @click="showQuickActions = !showQuickActions" class="p-2 hover:bg-green-700 rounded-lg">
+          <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+      </div>
+      
+      <!-- Mobile Quick Actions Dropdown -->
+      <div x-show="showQuickActions" x-cloak @click.away="showQuickActions = false" 
+           class="absolute top-full right-0 left-0 bg-white shadow-lg border-t p-4 grid grid-cols-4 gap-2">
+        <button @click="showOperationModal = true; showQuickActions = false" class="flex flex-col items-center gap-1 p-2 text-green-600 hover:bg-green-50 rounded-lg">
+          <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+          <span class="text-xs">Operazione</span>
+        </button>
+        <button @click="showProductModal = true; showQuickActions = false" class="flex flex-col items-center gap-1 p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+          <i data-lucide="package-plus" class="w-6 h-6"></i>
+          <span class="text-xs">Prodotto</span>
+        </button>
+        <button @click="showSupplierModal = true; showQuickActions = false" class="flex flex-col items-center gap-1 p-2 text-amber-600 hover:bg-amber-50 rounded-lg">
+          <i data-lucide="truck" class="w-6 h-6"></i>
+          <span class="text-xs">Fornitore</span>
+        </button>
+        <button @click="showPlotModal = true; showQuickActions = false" class="flex flex-col items-center gap-1 p-2 text-purple-600 hover:bg-purple-50 rounded-lg">
+          <i data-lucide="map-pin" class="w-6 h-6"></i>
+          <span class="text-xs">Appezzam.</span>
+        </button>
       </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
-        <template x-for="tab in tabs" :key="tab.id">
-          <button 
-            @click="activeTab = tab.id"
-            :class="activeTab === tab.id 
-              ? 'bg-green-600 text-white' 
-              : 'bg-white text-gray-600 hover:bg-gray-100'"
-            class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors"
-          >
-            <i :data-lucide="tab.icon" class="w-4 h-4"></i>
-            <span x-text="tab.label"></span>
-          </button>
-        </template>
+    <!-- Bottom Navigation Mobile -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 safe-area-bottom">
+      <div class="grid grid-cols-6 h-16">
+        <button @click="activeTab = 'dashboard'" 
+          :class="activeTab === 'dashboard' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Home</span>
+        </button>
+        <button @click="activeTab = 'products'" 
+          :class="activeTab === 'products' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="package" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Prodotti</span>
+        </button>
+        <button @click="activeTab = 'batches'" 
+          :class="activeTab === 'batches' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Lotti</span>
+        </button>
+        <button @click="activeTab = 'plots'" 
+          :class="activeTab === 'plots' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Terreni</span>
+        </button>
+        <button @click="activeTab = 'operations'" 
+          :class="activeTab === 'operations' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Lavori</span>
+        </button>
+        <button @click="activeTab = 'suppliers'" 
+          :class="activeTab === 'suppliers' ? 'text-green-600' : 'text-gray-400'"
+          class="flex flex-col items-center justify-center gap-0.5 hover:text-green-600 transition-colors">
+          <i data-lucide="truck" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Fornitori</span>
+        </button>
       </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 lg:ml-64 pt-14 pb-20 lg:pt-0 lg:pb-0">
+      <div class="max-w-6xl mx-auto px-4 py-6">
 
       <!-- Loading -->
       <div x-show="loading" class="flex items-center justify-center py-20">
@@ -311,6 +463,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Seedlings / Piantine -->
+      <div x-show="activeTab === 'seedlings' && !loading" x-cloak>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-800">🌱 Piantine Disponibili</h2>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200" x-show="seedlingsAvailable.length">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Nome</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Origine</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Prodotte</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Disponibili</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Data</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <template x-for="s in seedlingsAvailable" :key="s.id">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-medium" x-text="s.name"></td>
+                  <td class="px-4 py-3">
+                    <span x-show="s.source === 'semina_alveolo'" class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                      🌱 Semina in alveolo
+                    </span>
+                    <span x-show="s.source === 'acquisto'" class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                      🛒 Acquistate
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600" x-text="s.produced_qty"></td>
+                  <td class="px-4 py-3">
+                    <span class="font-semibold" :class="s.available_qty > 0 ? 'text-green-600' : 'text-red-500'" x-text="s.available_qty"></span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 text-sm" x-text="new Date(s.created_at).toLocaleDateString('it-IT')"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div x-show="!seedlingsAvailable.length" class="p-8 text-center text-gray-500">
+            <p class="mb-2">Nessuna piantina disponibile.</p>
+            <p class="text-sm">Le piantine si creano con una <strong>semina in alveolo</strong> o acquistando prodotti della categoria <strong>piantine</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+      </div>
+    </main>
     </div>
 
     <!-- Modal: Nuovo Prodotto + Acquisto -->
@@ -797,6 +996,7 @@
         showPlotModal: false,
         showSupplierModal: false,
         showOperationModal: false,
+        showQuickActions: false,
         saving: false,
 
         // Forms
