@@ -87,6 +87,19 @@ route('GET', '/api/products-with-stock', async (req, env) => {
   return json(results.results);
 });
 
+// Prodotti trapiantabili: piantine da semina in alveolo O acquistate
+route('GET', '/api/seedlings-available', async (req, env) => {
+  const results = await env.DB.prepare(`
+    SELECT 
+      s.id, s.name, s.source, s.produced_qty, s.available_qty,
+      s.operation_id, s.batch_id, s.created_at
+    FROM seedlings s
+    WHERE s.available_qty > 0
+    ORDER BY s.created_at DESC
+  `).all();
+  return json(results.results);
+});
+
 route('POST', '/api/products', async (req, env) => {
   const body = await req.json() as any;
   const { name, category_id, stock_unit_id, usage_unit_id, conversion_factor, notes } = body;
@@ -286,7 +299,24 @@ route('POST', '/api/batches', async (req, env) => {
     initial_qty, initial_qty, unit_id || null, expiry_date || null, notes || null
   ).run();
   
-  return json({ id: result.meta.last_row_id, message: 'Lotto creato' }, 201);
+  const batchId = result.meta.last_row_id;
+  
+  // Se il prodotto è della categoria "piantine", crea automaticamente seedlings
+  const product = await env.DB.prepare(`
+    SELECT p.name, pc.name as category_name
+    FROM products p
+    LEFT JOIN product_categories pc ON p.category_id = pc.id
+    WHERE p.id = ?
+  `).bind(product_id).first() as any;
+  
+  if (product && product.category_name === 'piantine') {
+    await env.DB.prepare(`
+      INSERT INTO seedlings (batch_id, name, source, produced_qty, available_qty)
+      VALUES (?, ?, 'acquisto', ?, ?)
+    `).bind(batchId, product.name, initial_qty, initial_qty).run();
+  }
+  
+  return json({ id: batchId, message: 'Lotto creato' }, 201);
 });
 
 // Tracciabilità inversa - risali all'origine
@@ -477,7 +507,7 @@ route('GET', '/api/operations/:id', async (req, env, params) => {
 
 route('POST', '/api/operations', async (req, env) => {
   const body = await req.json() as any;
-  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg, harvest_product, water_liters, dosage_per_hl, dosage_unit } = body;
+  const { type_code, operation_date, plot_id, plot_ids, notes, weather_conditions, movements, seed_location, harvest_kg, harvest_product, water_liters, dosage_per_hl, dosage_unit, seedlings_produced, seedling_name, seedling_id, transplant_qty } = body;
   
   if (!type_code || !operation_date) {
     return error('type_code e operation_date sono obbligatori');
@@ -492,9 +522,9 @@ route('POST', '/api/operations', async (req, env) => {
   
   // Inserisci operazione
   const opResult = await env.DB.prepare(`
-    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions, seed_location, water_liters, dosage_per_hl, dosage_unit)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null, seed_location || null, water_liters || null, dosage_per_hl || null, dosage_unit || null).run();
+    INSERT INTO operations (operation_type_id, operation_date, plot_id, notes, weather_conditions, seed_location, water_liters, dosage_per_hl, dosage_unit, seedlings_produced)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(opType.id, operation_date, plot_id || null, notes || null, weather_conditions || null, seed_location || null, water_liters || null, dosage_per_hl || null, dosage_unit || null, seedlings_produced || null).run();
   
   const operationId = opResult.meta.last_row_id;
   
@@ -504,6 +534,21 @@ route('POST', '/api/operations', async (req, env) => {
     await env.DB.prepare(`
       INSERT OR IGNORE INTO operation_plots (operation_id, plot_id) VALUES (?, ?)
     `).bind(operationId, pid).run();
+  }
+  
+  // Se è SEMINA IN ALVEOLO con piantine prodotte, crea entry in seedlings
+  if (type_code === 'semina' && seed_location === 'alveolo' && seedlings_produced && seedling_name) {
+    await env.DB.prepare(`
+      INSERT INTO seedlings (operation_id, name, source, produced_qty, available_qty)
+      VALUES (?, ?, 'semina_alveolo', ?, ?)
+    `).bind(operationId, seedling_name, seedlings_produced, seedlings_produced).run();
+  }
+  
+  // Se è TRAPIANTO con seedling_id, decrementa le piantine disponibili
+  if (type_code === 'trapianto' && seedling_id && transplant_qty) {
+    await env.DB.prepare(`
+      UPDATE seedlings SET available_qty = available_qty - ? WHERE id = ? AND available_qty >= ?
+    `).bind(transplant_qty, seedling_id, transplant_qty).run();
   }
   
   // Se è raccolta, registra in harvests con prodotto e per ogni appezzamento
