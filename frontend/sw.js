@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestionale-agricolo-v5';
+const CACHE_NAME = 'gestionale-agricolo-v6';
 const API_BASE = 'https://gestionale-agricolo-api.aziendamalbosca.workers.dev';
 
 // Files to cache for offline use

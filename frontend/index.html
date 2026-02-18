@@ -279,12 +279,43 @@
           </div>
           <div class="divide-y">
             <template x-for="op in dashboard?.recent_operations || []" :key="op.id">
-              <div class="p-4 flex items-center justify-between">
-                <div>
-                  <p class="font-medium" x-text="op.type_name"></p>
-                  <p class="text-sm text-gray-500" x-text="op.plot_name || 'Nessun appezzamento'"></p>
+              <div @click="activeTab = 'operations'" class="p-4 hover:bg-green-50 cursor-pointer transition-colors">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <!-- Icona dinamica per tipo -->
+                    <div class="p-2 rounded-lg flex-shrink-0" :class="{
+                      'bg-green-100': op.type_code === 'semina',
+                      'bg-blue-100': op.type_code === 'trapianto',
+                      'bg-amber-100': op.type_code === 'concimazione' || op.type_code === 'trattamento',
+                      'bg-orange-100': op.type_code === 'raccolta',
+                      'bg-gray-100': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(op.type_code)
+                    }">
+                      <i :data-lucide="op.type_code === 'semina' ? 'sprout' : 
+                                       op.type_code === 'trapianto' ? 'move' :
+                                       op.type_code === 'raccolta' ? 'apple' :
+                                       op.type_code === 'concimazione' ? 'flask-conical' :
+                                       op.type_code === 'trattamento' ? 'spray-can' : 'clipboard-list'" 
+                         class="w-4 h-4" :class="{
+                           'text-green-600': op.type_code === 'semina',
+                           'text-blue-600': op.type_code === 'trapianto',
+                           'text-amber-600': op.type_code === 'concimazione' || op.type_code === 'trattamento',
+                           'text-orange-600': op.type_code === 'raccolta',
+                           'text-gray-600': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(op.type_code)
+                         }"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-medium text-sm" x-text="op.type_name"></p>
+                      <!-- Dettaglio prodotto/piantina -->
+                      <p class="text-sm text-gray-600 truncate" x-show="op.product_name || op.seedling_name">
+                        <span x-show="op.product_name" x-text="op.product_name"></span>
+                        <span x-show="op.seedling_name && !op.product_name" x-text="op.seedling_name"></span>
+                        <span x-show="op.quantity" class="text-gray-400"> · <span x-text="op.quantity"></span></span>
+                      </p>
+                      <p class="text-xs text-gray-400" x-show="op.plot_name" x-text="op.plot_name"></p>
+                    </div>
+                  </div>
+                  <span class="text-xs text-gray-500 flex-shrink-0" x-text="new Date(op.operation_date).toLocaleDateString('it-IT')"></span>
                 </div>
-                <span class="text-sm text-gray-500" x-text="op.operation_date"></span>
               </div>
             </template>
             <div x-show="!dashboard?.recent_operations?.length" class="p-4 text-gray-500 text-center">
