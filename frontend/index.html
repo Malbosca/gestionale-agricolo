@@ -308,7 +308,7 @@
         <!-- Mobile: Cards -->
         <div class="lg:hidden space-y-3">
           <template x-for="p in products" :key="p.id">
-            <div class="bg-white rounded-xl shadow-sm border p-4">
+            <div @click="openEditProduct(p)" class="bg-white rounded-xl shadow-sm border p-4 cursor-pointer hover:border-green-300 hover:shadow-md transition-all">
               <div class="flex justify-between items-start">
                 <div>
                   <p class="font-semibold text-gray-900" x-text="p.name"></p>
@@ -316,6 +316,7 @@
                 </div>
                 <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full" x-text="p.category_name"></span>
               </div>
+              <p x-show="p.notes" class="text-sm text-gray-500 mt-2" x-text="p.notes"></p>
             </div>
           </template>
           <div x-show="!products.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
@@ -331,15 +332,23 @@
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Nome</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Categoria</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Note</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Azioni</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <template x-for="p in products" :key="p.id">
-                <tr class="hover:bg-gray-50">
+                <tr @click="openEditProduct(p)" class="hover:bg-green-50 cursor-pointer">
                   <td class="px-4 py-3 font-mono text-sm text-green-600" x-text="p.sku"></td>
                   <td class="px-4 py-3 font-medium" x-text="p.name"></td>
                   <td class="px-4 py-3">
                     <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full" x-text="p.category_name"></span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500" x-text="p.notes || '-'"></td>
+                  <td class="px-4 py-3 text-center">
+                    <button class="text-green-600 hover:text-green-800">
+                      <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
                   </td>
                 </tr>
               </template>
@@ -460,17 +469,25 @@
         <div class="bg-white rounded-xl shadow-sm border">
           <div class="divide-y">
             <template x-for="op in operations" :key="op.id">
-              <div class="p-4 flex items-center justify-between hover:bg-gray-50">
+              <div @click="openEditOperation(op)" class="p-4 flex items-center justify-between hover:bg-green-50 cursor-pointer transition-colors">
                 <div class="flex items-center gap-4">
                   <div class="p-2 bg-amber-100 rounded-lg">
                     <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-600"></i>
                   </div>
                   <div>
                     <p class="font-medium" x-text="op.type_name"></p>
-                    <p class="text-sm text-gray-500" x-text="(op.plot_name || 'Nessun appezzamento') + (op.notes ? ' • ' + op.notes : '')"></p>
+                    <p class="text-sm text-gray-500">
+                      <span x-text="op.plot_name || 'Nessun appezzamento'"></span>
+                      <span x-show="op.product_name" class="text-green-600"> • <span x-text="op.product_name"></span></span>
+                      <span x-show="op.quantity"> (<span x-text="op.quantity"></span> usati)</span>
+                      <span x-show="op.notes" class="text-gray-400"> • <span x-text="op.notes"></span></span>
+                    </p>
                   </div>
                 </div>
-                <span class="text-sm text-gray-500" x-text="op.operation_date"></span>
+                <div class="text-right flex items-center gap-3">
+                  <span class="text-sm text-gray-500" x-text="new Date(op.operation_date).toLocaleDateString('it-IT')"></span>
+                  <i data-lucide="pencil" class="w-4 h-4 text-green-600"></i>
+                </div>
               </div>
             </template>
           </div>
@@ -1079,8 +1096,12 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto</label>
                 <select x-model="newOperation.product_id" class="w-full px-3 py-2 border rounded-lg">
                   <option value="">Seleziona...</option>
-                  <template x-for="p in productsWithStock" :key="p.id">
-                    <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ' disp.)'"></option>
+                  <template x-for="cat in categoriesWithProducts" :key="cat.name">
+                    <optgroup :label="cat.name">
+                      <template x-for="p in cat.products" :key="p.id">
+                        <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ')'"></option>
+                      </template>
+                    </optgroup>
                   </template>
                 </select>
               </div>
@@ -1146,8 +1167,12 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto</label>
                   <select x-model="newOperation.product_id" class="w-full px-3 py-2 border rounded-lg">
                     <option value="">Seleziona...</option>
-                    <template x-for="p in productsWithStock" :key="p.id">
-                      <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ' disp.)'"></option>
+                    <template x-for="cat in categoriesWithProducts" :key="cat.name">
+                      <optgroup :label="cat.name">
+                        <template x-for="p in cat.products" :key="p.id">
+                          <option :value="p.id" x-text="p.name + ' (' + p.total_stock + ' ' + (p.unit_name || '') + ')'"></option>
+                        </template>
+                      </optgroup>
                     </template>
                   </select>
                 </div>
@@ -1187,6 +1212,137 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal: Modifica Prodotto -->
+    <div x-show="showEditProductModal" x-cloak 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+      <div class="min-h-full flex items-start justify-center p-4 pt-12 lg:pt-20 pb-20">
+        <div x-show="showEditProductModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-4"
+             class="bg-white rounded-xl w-full max-w-lg shadow-2xl" @click.away="showEditProductModal = false">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
+          <h2 class="text-lg font-semibold">Dettaglio Prodotto</h2>
+          <button @click="showEditProductModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="p-4" x-show="editProduct">
+          <!-- Info prodotto -->
+          <div class="mb-4 p-3 bg-green-50 rounded-lg">
+            <p class="text-sm text-green-700 font-mono" x-text="editProduct?.sku"></p>
+          </div>
+          
+          <form @submit.prevent="updateProduct()">
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+              <input x-model="editProduct.name" type="text" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+              <select x-model="editProduct.category_id" class="w-full px-3 py-2 border rounded-lg">
+                <template x-for="c in categories" :key="c.id">
+                  <option :value="c.id" x-text="c.name"></option>
+                </template>
+              </select>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea x-model="editProduct.notes" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+            </div>
+            
+            <div class="flex gap-2">
+              <button type="submit" :disabled="saving" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                <span x-text="saving ? 'Salvataggio...' : 'Salva Modifiche'"></span>
+              </button>
+              <button type="button" @click="deleteProduct()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Modifica Operazione -->
+    <div x-show="showEditOperationModal" x-cloak 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+      <div class="min-h-full flex items-start justify-center p-4 pt-12 lg:pt-20 pb-20">
+        <div x-show="showEditOperationModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-4"
+             class="bg-white rounded-xl w-full max-w-lg shadow-2xl" @click.away="showEditOperationModal = false">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
+          <h2 class="text-lg font-semibold">Dettaglio Operazione</h2>
+          <button @click="showEditOperationModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div class="p-4" x-show="editOperation">
+          <!-- Info operazione -->
+          <div class="mb-4 p-3 bg-amber-50 rounded-lg">
+            <p class="font-medium text-amber-800" x-text="editOperation?.type_name"></p>
+            <p class="text-sm text-amber-600" x-text="editOperation?.operation_date ? new Date(editOperation.operation_date).toLocaleDateString('it-IT') : ''"></p>
+          </div>
+          
+          <form @submit.prevent="updateOperation()">
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
+              <input x-model="editOperation.operation_date" type="date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            
+            <div class="mb-3" x-show="editOperation?.plot_name">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Appezzamento</label>
+              <input type="text" :value="editOperation?.plot_name" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+            </div>
+            
+            <div class="mb-3" x-show="editOperation?.product_name">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto utilizzato</label>
+              <input type="text" :value="editOperation?.product_name" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+            </div>
+            
+            <div class="mb-3" x-show="editOperation?.quantity">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
+              <input x-model="editOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea x-model="editOperation.notes" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+            </div>
+            
+            <div class="flex gap-2">
+              <button type="submit" :disabled="saving" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                <span x-text="saving ? 'Salvataggio...' : 'Salva Modifiche'"></span>
+              </button>
+              <button type="button" @click="deleteOperation()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1217,7 +1373,13 @@
         showSupplierModal: false,
         showOperationModal: false,
         showQuickActions: false,
+        showEditProductModal: false,
+        showEditOperationModal: false,
         saving: false,
+
+        // Edit data
+        editProduct: null,
+        editOperation: null,
 
         // Forms
         newProduct: { 
@@ -1229,6 +1391,47 @@
         newPlot: { code: '', name: '', area_sqm: '', notes: '' },
         newSupplier: { name: '', vat_number: '', address: '', city: '', province: '', zip_code: '', phone: '', email: '', notes: '' },
         newOperation: { type_code: '', operation_date: '', plot_ids: [], product_id: '', quantity: '', notes: '', seed_location: '', harvest_kg: '', harvest_product: '', dosage_per_hl: '', dosage_unit: 'ml_hl', water_liters: '', seedling_name: '', seedlings_produced: '', seedling_id: '', transplant_qty: '' },
+
+        // Computed: prodotti raggruppati per categoria
+        get productsByCategory() {
+          const grouped = {};
+          const catOrder = ['sementi', 'piantine', 'concimi', 'fitofarmaci', 'substrati'];
+          
+          // Initialize categories
+          catOrder.forEach(cat => { grouped[cat] = []; });
+          grouped['altro'] = [];
+          
+          // Group products
+          this.productsWithStock.forEach(p => {
+            const catName = (p.category_name || 'altro').toLowerCase();
+            if (grouped[catName]) {
+              grouped[catName].push(p);
+            } else {
+              grouped['altro'].push(p);
+            }
+          });
+          
+          return grouped;
+        },
+
+        // Computed: categorie con prodotti
+        get categoriesWithProducts() {
+          const catNames = {
+            'sementi': '🌱 Sementi',
+            'piantine': '🌿 Piantine', 
+            'concimi': '🧪 Concimi',
+            'fitofarmaci': '💊 Fitofarmaci',
+            'substrati': '🪴 Substrati',
+            'altro': '📦 Altro'
+          };
+          
+          return Object.entries(this.productsByCategory)
+            .filter(([cat, prods]) => prods.length > 0)
+            .map(([cat, prods]) => ({
+              name: catNames[cat] || cat,
+              products: prods
+            }));
+        },
 
         tabs: [
           { id: 'dashboard', label: 'Dashboard', icon: 'bar-chart-3' },
@@ -1283,9 +1486,9 @@
           return res.json();
         },
 
-        async post(endpoint, data) {
+        async post(endpoint, data, method = 'POST') {
           const res = await fetch(API_BASE + endpoint, {
-            method: 'POST',
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
@@ -1401,6 +1604,86 @@
             this.batches = await this.fetch('/api/batches?with_stock=true');
             this.productsWithStock = await this.fetch('/api/products-with-stock');
             this.seedlingsAvailable = await this.fetch('/api/seedlings-available');
+            this.dashboard = await this.fetch('/api/dashboard');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        // Edit Product
+        openEditProduct(product) {
+          this.editProduct = { ...product };
+          this.showEditProductModal = true;
+          this.$nextTick(() => lucide.createIcons());
+        },
+
+        async updateProduct() {
+          if (!this.editProduct) return;
+          this.saving = true;
+          try {
+            await this.post(`/api/products/${this.editProduct.id}`, {
+              name: this.editProduct.name,
+              category_id: this.editProduct.category_id,
+              notes: this.editProduct.notes
+            }, 'PUT');
+            this.showEditProductModal = false;
+            this.products = await this.fetch('/api/products');
+            this.productsWithStock = await this.fetch('/api/products-with-stock');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async deleteProduct() {
+          if (!this.editProduct) return;
+          if (!confirm(`Eliminare "${this.editProduct.name}"?\n\nAttenzione: verranno eliminati anche tutti i lotti associati.`)) return;
+          
+          this.saving = true;
+          try {
+            await this.post(`/api/products/${this.editProduct.id}`, {}, 'DELETE');
+            this.showEditProductModal = false;
+            this.products = await this.fetch('/api/products');
+            this.productsWithStock = await this.fetch('/api/products-with-stock');
+            this.batches = await this.fetch('/api/batches?with_stock=true');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        // Edit Operation
+        openEditOperation(operation) {
+          this.editOperation = { ...operation };
+          this.showEditOperationModal = true;
+          this.$nextTick(() => lucide.createIcons());
+        },
+
+        async updateOperation() {
+          if (!this.editOperation) return;
+          this.saving = true;
+          try {
+            await this.post(`/api/operations/${this.editOperation.id}`, {
+              operation_date: this.editOperation.operation_date,
+              quantity: this.editOperation.quantity,
+              notes: this.editOperation.notes
+            }, 'PUT');
+            this.showEditOperationModal = false;
+            this.operations = await this.fetch('/api/operations');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async deleteOperation() {
+          if (!this.editOperation) return;
+          if (!confirm(`Eliminare questa operazione "${this.editOperation.type_name}" del ${new Date(this.editOperation.operation_date).toLocaleDateString('it-IT')}?`)) return;
+          
+          this.saving = true;
+          try {
+            await this.post(`/api/operations/${this.editOperation.id}`, {}, 'DELETE');
+            this.showEditOperationModal = false;
+            this.operations = await this.fetch('/api/operations');
+            this.batches = await this.fetch('/api/batches?with_stock=true');
+            this.productsWithStock = await this.fetch('/api/products-with-stock');
             this.dashboard = await this.fetch('/api/dashboard');
           } finally {
             this.saving = false;
