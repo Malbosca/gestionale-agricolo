@@ -772,13 +772,20 @@ route('GET', '/api/dashboard', async (req, env) => {
       GROUP BY pc.id
     `).all(),
     
-    // Ultime 10 operazioni
+    // Ultime 10 operazioni con dettagli
     env.DB.prepare(`
-      SELECT o.*, ot.name as type_name, pl.name as plot_name
+      SELECT o.*, ot.code as type_code, ot.name as type_name, pl.name as plot_name,
+             p.name as product_name, om.quantity, u.name as unit_name,
+             s.name as seedling_name, s.produced_qty as seedlings_produced
       FROM operations o
       JOIN operation_types ot ON o.operation_type_id = ot.id
       LEFT JOIN plots pl ON o.plot_id = pl.id
-      ORDER BY o.operation_date DESC
+      LEFT JOIN operation_movements om ON om.operation_id = o.id
+      LEFT JOIN batches b ON om.batch_id = b.id
+      LEFT JOIN products p ON b.product_id = p.id
+      LEFT JOIN units u ON b.unit_id = u.id
+      LEFT JOIN seedlings s ON s.operation_id = o.id
+      ORDER BY o.operation_date DESC, o.created_at DESC
       LIMIT 10
     `).all(),
     
