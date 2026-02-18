@@ -469,24 +469,70 @@
         <div class="bg-white rounded-xl shadow-sm border">
           <div class="divide-y">
             <template x-for="op in operations" :key="op.id">
-              <div @click="openEditOperation(op)" class="p-4 flex items-center justify-between hover:bg-green-50 cursor-pointer transition-colors">
-                <div class="flex items-center gap-4">
-                  <div class="p-2 bg-amber-100 rounded-lg">
-                    <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-600"></i>
+              <div @click="openEditOperation(op)" class="p-4 hover:bg-green-50 cursor-pointer transition-colors">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <!-- Icona dinamica per tipo -->
+                    <div class="p-2 rounded-lg" :class="{
+                      'bg-green-100': op.type_code === 'semina',
+                      'bg-blue-100': op.type_code === 'trapianto',
+                      'bg-amber-100': op.type_code === 'concimazione' || op.type_code === 'trattamento',
+                      'bg-orange-100': op.type_code === 'raccolta',
+                      'bg-gray-100': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(op.type_code)
+                    }">
+                      <i :data-lucide="op.type_code === 'semina' ? 'sprout' : 
+                                       op.type_code === 'trapianto' ? 'move' :
+                                       op.type_code === 'raccolta' ? 'apple' :
+                                       op.type_code === 'concimazione' ? 'flask-conical' :
+                                       op.type_code === 'trattamento' ? 'spray-can' : 'clipboard-list'" 
+                         class="w-5 h-5" :class="{
+                           'text-green-600': op.type_code === 'semina',
+                           'text-blue-600': op.type_code === 'trapianto',
+                           'text-amber-600': op.type_code === 'concimazione' || op.type_code === 'trattamento',
+                           'text-orange-600': op.type_code === 'raccolta',
+                           'text-gray-600': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(op.type_code)
+                         }"></i>
+                    </div>
+                    <div>
+                      <p class="font-medium" x-text="op.type_name"></p>
+                      
+                      <!-- Dettagli specifici per SEMINA -->
+                      <div x-show="op.type_code === 'semina'" class="text-sm text-gray-600">
+                        <span x-show="op.product_name" class="text-green-700 font-medium" x-text="'🌱 ' + op.product_name"></span>
+                        <span x-show="op.quantity" class="text-gray-500"> · <span x-text="op.quantity + ' ' + (op.unit_name || '')"></span> usati</span>
+                        <span x-show="op.seedling_name" class="text-blue-600"> → <span x-text="op.seedlings_produced"></span> piantine "<span x-text="op.seedling_name"></span>"</span>
+                      </div>
+                      
+                      <!-- Dettagli specifici per TRAPIANTO -->
+                      <div x-show="op.type_code === 'trapianto'" class="text-sm text-gray-600">
+                        <span x-show="op.seedling_name" class="text-blue-700 font-medium" x-text="'🌿 ' + op.seedling_name"></span>
+                        <span x-show="op.quantity" class="text-gray-500"> · <span x-text="op.quantity"></span> piantine</span>
+                      </div>
+                      
+                      <!-- Dettagli specifici per CONCIMAZIONE/TRATTAMENTO -->
+                      <div x-show="op.type_code === 'concimazione' || op.type_code === 'trattamento'" class="text-sm text-gray-600">
+                        <span x-show="op.product_name" class="text-amber-700 font-medium" x-text="'🧪 ' + op.product_name"></span>
+                        <span x-show="op.quantity" class="text-gray-500"> · <span x-text="op.quantity + ' ' + (op.unit_name || '')"></span></span>
+                      </div>
+                      
+                      <!-- Dettagli specifici per RACCOLTA -->
+                      <div x-show="op.type_code === 'raccolta'" class="text-sm text-gray-600">
+                        <span x-show="op.harvest_product" class="text-orange-700 font-medium" x-text="'🧺 ' + op.harvest_product"></span>
+                        <span x-show="op.harvest_kg" class="text-gray-500"> · <span x-text="op.harvest_kg"></span> kg</span>
+                      </div>
+                      
+                      <!-- Appezzamento e note (per tutti) -->
+                      <p class="text-sm text-gray-400 mt-1">
+                        <span x-text="op.plot_name || ''"></span>
+                        <span x-show="op.plot_name && op.notes"> · </span>
+                        <span x-show="op.notes" x-text="op.notes"></span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p class="font-medium" x-text="op.type_name"></p>
-                    <p class="text-sm text-gray-500">
-                      <span x-text="op.plot_name || 'Nessun appezzamento'"></span>
-                      <span x-show="op.product_name" class="text-green-600"> • <span x-text="op.product_name"></span></span>
-                      <span x-show="op.quantity"> (<span x-text="op.quantity"></span> usati)</span>
-                      <span x-show="op.notes" class="text-gray-400"> • <span x-text="op.notes"></span></span>
-                    </p>
+                  <div class="text-right flex items-center gap-3">
+                    <span class="text-sm text-gray-500" x-text="new Date(op.operation_date).toLocaleDateString('it-IT')"></span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
                   </div>
-                </div>
-                <div class="text-right flex items-center gap-3">
-                  <span class="text-sm text-gray-500" x-text="new Date(op.operation_date).toLocaleDateString('it-IT')"></span>
-                  <i data-lucide="pencil" class="w-4 h-4 text-green-600"></i>
                 </div>
               </div>
             </template>
@@ -1298,10 +1344,53 @@
           <button @click="showEditOperationModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
         </div>
         <div class="p-4" x-show="editOperation">
-          <!-- Info operazione -->
-          <div class="mb-4 p-3 bg-amber-50 rounded-lg">
-            <p class="font-medium text-amber-800" x-text="editOperation?.type_name"></p>
-            <p class="text-sm text-amber-600" x-text="editOperation?.operation_date ? new Date(editOperation.operation_date).toLocaleDateString('it-IT') : ''"></p>
+          <!-- Header con tipo e data -->
+          <div class="mb-4 p-3 rounded-lg" :class="{
+            'bg-green-50': editOperation?.type_code === 'semina',
+            'bg-blue-50': editOperation?.type_code === 'trapianto',
+            'bg-amber-50': editOperation?.type_code === 'concimazione' || editOperation?.type_code === 'trattamento',
+            'bg-orange-50': editOperation?.type_code === 'raccolta',
+            'bg-gray-50': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(editOperation?.type_code)
+          }">
+            <p class="font-medium" :class="{
+              'text-green-800': editOperation?.type_code === 'semina',
+              'text-blue-800': editOperation?.type_code === 'trapianto',
+              'text-amber-800': editOperation?.type_code === 'concimazione' || editOperation?.type_code === 'trattamento',
+              'text-orange-800': editOperation?.type_code === 'raccolta',
+              'text-gray-800': !['semina','trapianto','concimazione','trattamento','raccolta'].includes(editOperation?.type_code)
+            }" x-text="editOperation?.type_name"></p>
+            <p class="text-sm text-gray-600" x-text="editOperation?.operation_date ? new Date(editOperation.operation_date).toLocaleDateString('it-IT', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) : ''"></p>
+          </div>
+          
+          <!-- Dettagli specifici per SEMINA -->
+          <div x-show="editOperation?.type_code === 'semina' && editOperation?.product_name" class="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+            <p class="text-sm text-green-700 font-medium mb-1">🌱 Prodotto seminato</p>
+            <p class="text-green-900 font-semibold" x-text="editOperation?.product_name"></p>
+            <p x-show="editOperation?.quantity" class="text-sm text-green-600 mt-1" x-text="editOperation?.quantity + ' ' + (editOperation?.unit_name || '') + ' utilizzati'"></p>
+            <div x-show="editOperation?.seedling_name" class="mt-2 pt-2 border-t border-green-200">
+              <p class="text-sm text-blue-700">→ Piantine prodotte: <strong x-text="editOperation?.seedlings_produced"></strong> "<span x-text="editOperation?.seedling_name"></span>"</p>
+            </div>
+          </div>
+          
+          <!-- Dettagli specifici per TRAPIANTO -->
+          <div x-show="editOperation?.type_code === 'trapianto' && editOperation?.seedling_name" class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="text-sm text-blue-700 font-medium mb-1">🌿 Piantine trapiantate</p>
+            <p class="text-blue-900 font-semibold" x-text="editOperation?.seedling_name"></p>
+            <p x-show="editOperation?.quantity" class="text-sm text-blue-600 mt-1" x-text="editOperation?.quantity + ' piantine'"></p>
+          </div>
+          
+          <!-- Dettagli specifici per CONCIMAZIONE/TRATTAMENTO -->
+          <div x-show="(editOperation?.type_code === 'concimazione' || editOperation?.type_code === 'trattamento') && editOperation?.product_name" class="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <p class="text-sm text-amber-700 font-medium mb-1">🧪 Prodotto utilizzato</p>
+            <p class="text-amber-900 font-semibold" x-text="editOperation?.product_name"></p>
+            <p x-show="editOperation?.quantity" class="text-sm text-amber-600 mt-1" x-text="editOperation?.quantity + ' ' + (editOperation?.unit_name || '')"></p>
+          </div>
+          
+          <!-- Dettagli specifici per RACCOLTA -->
+          <div x-show="editOperation?.type_code === 'raccolta' && editOperation?.harvest_product" class="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+            <p class="text-sm text-orange-700 font-medium mb-1">🧺 Raccolto</p>
+            <p class="text-orange-900 font-semibold" x-text="editOperation?.harvest_product"></p>
+            <p x-show="editOperation?.harvest_kg" class="text-sm text-orange-600 mt-1" x-text="editOperation?.harvest_kg + ' kg'"></p>
           </div>
           
           <form @submit.prevent="updateOperation()">
@@ -1313,16 +1402,6 @@
             <div class="mb-3" x-show="editOperation?.plot_name">
               <label class="block text-sm font-medium text-gray-700 mb-1">Appezzamento</label>
               <input type="text" :value="editOperation?.plot_name" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
-            </div>
-            
-            <div class="mb-3" x-show="editOperation?.product_name">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto utilizzato</label>
-              <input type="text" :value="editOperation?.product_name" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
-            </div>
-            
-            <div class="mb-3" x-show="editOperation?.quantity">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Quantità utilizzata</label>
-              <input x-model="editOperation.quantity" type="number" step="0.01" class="w-full px-3 py-2 border rounded-lg">
             </div>
             
             <div class="mb-4">
