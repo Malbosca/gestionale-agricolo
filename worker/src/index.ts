@@ -147,6 +147,34 @@ route('POST', '/api/products', async (req, env) => {
   return json({ id: result.meta.last_row_id, sku, message: 'Prodotto creato' }, 201);
 });
 
+// Modifica prodotto
+route('PUT', '/api/products/:id', async (req, env, params) => {
+  const { id } = params;
+  const body = await req.json() as any;
+  const { name, category_id, notes } = body;
+  
+  await env.DB.prepare(`
+    UPDATE products SET name = ?, category_id = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(name, category_id || null, notes || null, id).run();
+  
+  return json({ message: 'Prodotto aggiornato' });
+});
+
+// Elimina prodotto
+route('DELETE', '/api/products/:id', async (req, env, params) => {
+  const { id } = params;
+  
+  // Elimina prima i movimenti dei lotti associati
+  await env.DB.prepare('DELETE FROM batch_movements WHERE batch_id IN (SELECT id FROM batches WHERE product_id = ?)').bind(id).run();
+  // Elimina i lotti
+  await env.DB.prepare('DELETE FROM batches WHERE product_id = ?').bind(id).run();
+  // Elimina il prodotto
+  await env.DB.prepare('DELETE FROM products WHERE id = ?').bind(id).run();
+  
+  return json({ message: 'Prodotto eliminato' });
+});
+
 // Crea prodotto + primo acquisto insieme
 route('POST', '/api/products/with-purchase', async (req, env) => {
   const body = await req.json() as any;
@@ -596,6 +624,62 @@ route('POST', '/api/operations', async (req, env) => {
     message: 'Operazione registrata',
     actual_quantity_used: actualQuantityUsed
   }, 201);
+});
+
+// Modifica operazione
+route('PUT', '/api/operations/:id', async (req, env, params) => {
+  const { id } = params;
+  const body = await req.json() as any;
+  const { operation_date, quantity, notes } = body;
+  
+  await env.DB.prepare(`
+    UPDATE operations SET operation_date = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(operation_date, notes || null, id).run();
+  
+  // Se c'è una quantità, aggiorna il movimento
+  if (quantity !== undefined) {
+    const movement = await env.DB.prepare('SELECT * FROM operation_movements WHERE operation_id = ?').bind(id).first() as any;
+    if (movement) {
+      const oldQty = movement.quantity;
+      const diff = quantity - oldQty;
+      
+      // Aggiorna movimento
+      await env.DB.prepare('UPDATE operation_movements SET quantity = ? WHERE operation_id = ?').bind(quantity, id).run();
+      
+      // Aggiorna giacenza batch
+      await env.DB.prepare('UPDATE batches SET current_qty = current_qty - ? WHERE id = ?').bind(diff, movement.batch_id).run();
+    }
+  }
+  
+  return json({ message: 'Operazione aggiornata' });
+});
+
+// Elimina operazione
+route('DELETE', '/api/operations/:id', async (req, env, params) => {
+  const { id } = params;
+  
+  // Ripristina giacenze dai movimenti
+  const movements = await env.DB.prepare('SELECT * FROM operation_movements WHERE operation_id = ?').bind(id).all();
+  for (const mov of movements.results as any[]) {
+    // input = consumo, quindi ripristiniamo aggiungendo
+    const restore = mov.movement_type === 'input' ? mov.quantity : -mov.quantity;
+    await env.DB.prepare('UPDATE batches SET current_qty = current_qty + ? WHERE id = ?').bind(restore, mov.batch_id).run();
+  }
+  
+  // Elimina movimenti
+  await env.DB.prepare('DELETE FROM operation_movements WHERE operation_id = ?').bind(id).run();
+  
+  // Elimina collegamenti appezzamenti
+  await env.DB.prepare('DELETE FROM operation_plots WHERE operation_id = ?').bind(id).run();
+  
+  // Elimina piantine create
+  await env.DB.prepare('DELETE FROM seedlings WHERE operation_id = ?').bind(id).run();
+  
+  // Elimina operazione
+  await env.DB.prepare('DELETE FROM operations WHERE id = ?').bind(id).run();
+  
+  return json({ message: 'Operazione eliminata' });
 });
 
 // ============================================
