@@ -305,9 +305,26 @@
           </button>
         </div>
         
+        <!-- Filtro Categorie -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button @click="productCategoryFilter = ''" 
+                  :class="productCategoryFilter === '' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                  class="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors">
+            Tutti <span class="text-xs opacity-75" x-text="'(' + products.length + ')'"></span>
+          </button>
+          <template x-for="cat in categories" :key="cat.id">
+            <button @click="productCategoryFilter = cat.name" 
+                    :class="productCategoryFilter === cat.name ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                    class="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors">
+              <span x-text="cat.name.charAt(0).toUpperCase() + cat.name.slice(1)"></span>
+              <span class="text-xs opacity-75" x-text="'(' + products.filter(p => p.category_name === cat.name).length + ')'"></span>
+            </button>
+          </template>
+        </div>
+        
         <!-- Mobile: Cards -->
         <div class="lg:hidden space-y-3">
-          <template x-for="p in products" :key="p.id">
+          <template x-for="p in filteredProducts" :key="p.id">
             <div @click="openEditProduct(p)" class="bg-white rounded-xl shadow-sm border p-4 cursor-pointer hover:border-green-300 hover:shadow-md transition-all">
               <div class="flex justify-between items-start">
                 <div>
@@ -319,14 +336,15 @@
               <p x-show="p.notes" class="text-sm text-gray-500 mt-2" x-text="p.notes"></p>
             </div>
           </template>
-          <div x-show="!products.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
-            Nessun prodotto. Crea il primo!
+          <div x-show="!filteredProducts.length" class="bg-white rounded-xl p-8 text-center text-gray-500">
+            <span x-show="productCategoryFilter">Nessun prodotto in questa categoria</span>
+            <span x-show="!productCategoryFilter">Nessun prodotto. Crea il primo!</span>
           </div>
         </div>
         
         <!-- Desktop: Table -->
         <div class="hidden lg:block bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full" x-show="products.length">
+          <table class="w-full" x-show="filteredProducts.length">
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
@@ -337,7 +355,7 @@
               </tr>
             </thead>
             <tbody class="divide-y">
-              <template x-for="p in products" :key="p.id">
+              <template x-for="p in filteredProducts" :key="p.id">
                 <tr @click="openEditProduct(p)" class="hover:bg-green-50 cursor-pointer">
                   <td class="px-4 py-3 font-mono text-sm text-green-600" x-text="p.sku"></td>
                   <td class="px-4 py-3 font-medium" x-text="p.name"></td>
@@ -354,8 +372,9 @@
               </template>
             </tbody>
           </table>
-          <div x-show="!products.length" class="p-8 text-center text-gray-500">
-            Nessun prodotto. Crea il primo!
+          <div x-show="!filteredProducts.length" class="p-8 text-center text-gray-500">
+            <span x-show="productCategoryFilter">Nessun prodotto in questa categoria</span>
+            <span x-show="!productCategoryFilter">Nessun prodotto. Crea il primo!</span>
           </div>
         </div>
       </div>
@@ -1456,9 +1475,18 @@
         showEditOperationModal: false,
         saving: false,
 
+        // Filters
+        productCategoryFilter: '',
+
         // Edit data
         editProduct: null,
         editOperation: null,
+
+        // Computed: prodotti filtrati per categoria
+        get filteredProducts() {
+          if (!this.productCategoryFilter) return this.products;
+          return this.products.filter(p => p.category_name === this.productCategoryFilter);
+        },
 
         // Forms
         newProduct: { 
