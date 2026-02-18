@@ -1166,12 +1166,12 @@
             
             <div class="mb-3">
               <label class="block text-sm font-medium text-gray-700 mb-1">Prodotto raccolto *</label>
-              <input x-model="newOperation.harvest_product" type="text" placeholder="Es: Fragole, Pomodori, Albicocche..." required class="w-full px-3 py-2 border rounded-lg">
+              <input x-model="newOperation.harvest_product" type="text" placeholder="Es: Fragole, Pomodori, Albicocche..." :required="newOperation.type_code === 'raccolta'" class="w-full px-3 py-2 border rounded-lg">
             </div>
             
             <div class="mb-3">
               <label class="block text-sm font-medium text-gray-700 mb-1">Kg Raccolti *</label>
-              <input x-model="newOperation.harvest_kg" type="number" step="0.1" min="0" placeholder="Es: 150" required class="w-full px-3 py-2 border rounded-lg">
+              <input x-model="newOperation.harvest_kg" type="number" step="0.1" min="0" placeholder="Es: 150" :required="newOperation.type_code === 'raccolta'" class="w-full px-3 py-2 border rounded-lg">
             </div>
           </div>
           
