@@ -472,10 +472,18 @@ route('GET', '/api/operations', async (req, env) => {
   
   let query = `
     SELECT o.*, ot.code as type_code, ot.name as type_name, 
-           pl.name as plot_name, pl.code as plot_code
+           pl.name as plot_name, pl.code as plot_code,
+           p.name as product_name, p.sku as product_sku,
+           om.quantity as quantity, u.name as unit_name,
+           s.name as seedling_name, s.produced_qty as seedlings_produced
     FROM operations o
     JOIN operation_types ot ON o.operation_type_id = ot.id
     LEFT JOIN plots pl ON o.plot_id = pl.id
+    LEFT JOIN operation_movements om ON om.operation_id = o.id
+    LEFT JOIN batches b ON om.batch_id = b.id
+    LEFT JOIN products p ON b.product_id = p.id
+    LEFT JOIN units u ON b.unit_id = u.id
+    LEFT JOIN seedlings s ON s.operation_id = o.id
   `;
   
   const conditions = [];
